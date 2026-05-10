@@ -1,0 +1,857 @@
+body {
+    font-family: 'Inter', sans-serif;
+    scroll-behavior: smooth;
+}
+
+.glass {
+    background: rgba(255, 255, 255, 0.9);
+    backdrop-filter: blur(10px);
+}
+
+.sidebar-item.active {
+    background: #6366f1;
+    color: white;
+    box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
+}
+
+[x-cloak] {
+    display: none !important;
+}
+
+.chart-container {
+    position: relative;
+    height: 260px;
+    width: 100%;
+}
+
+::-webkit-scrollbar {
+    width: 6px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #e2e8f0;
+    border-radius: 10px;
+}
+
+.modal-animate {
+    animation: modalIn 0.3s ease-out;
+}
+
+@keyframes modalIn {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* CSS cho Chatbot AI */
+.chat-container {
+    position: fixed;
+    bottom: 85px;
+    right: 20px;
+    width: 380px;
+    height: 540px;
+    background: white;
+    border-radius: 28px;
+    box-shadow: 0 25px 60px rgba(99, 102, 241, 0.18), 0 4px 20px rgba(0, 0, 0, 0.08);
+    display: flex;
+    flex-direction: column;
+    z-index: 50;
+    overflow: hidden;
+    border: 1px solid rgba(99, 102, 241, 0.12);
+}
+
+.message-ai {
+    background: #f1f5f9;
+    border-radius: 18px 18px 18px 4px;
+    color: #1e293b;
+}
+
+.message-user {
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    color: white;
+    border-radius: 18px 18px 4px 18px;
+}
+
+.typing-indicator span {
+    display: inline-block;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background-color: #a5b4fc;
+    animation: chatBounce 1.3s infinite;
+}
+
+.typing-indicator span:nth-child(2) {
+    animation-delay: 0.2s;
+}
+
+.typing-indicator span:nth-child(3) {
+    animation-delay: 0.4s;
+}
+
+@keyframes chatBounce {
+
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-7px);
+    }
+}
+
+.chip-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+    border: 1.5px solid #e2e8f0;
+    background: white;
+    transition: all .15s;
+    white-space: nowrap;
+}
+
+.chip-btn:hover {
+    border-color: #6366f1;
+    background: #eef2ff;
+    color: #4f46e5;
+}
+
+.chat-input-box {
+    border: 2px solid #e2e8f0;
+    border-radius: 16px;
+    padding: 10px 14px;
+    font-size: 13px;
+    font-weight: 600;
+    outline: none;
+    flex: 1;
+    transition: border-color .2s;
+    background: #f8fafc;
+}
+
+.chat-input-box:focus {
+    border-color: #6366f1;
+    background: white;
+}
+
+.chat-send-btn {
+    width: 42px;
+    height: 42px;
+    border-radius: 14px;
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    color: white;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform .15s;
+    flex-shrink: 0;
+}
+
+.chat-send-btn:hover {
+    transform: scale(1.08);
+}
+
+/* ── TOAST NOTIFICATION ── */
+#toast-container {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column-reverse;
+    gap: 10px;
+    pointer-events: none;
+}
+
+.toast {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 18px;
+    border-radius: 16px;
+    font-size: 13px;
+    font-weight: 700;
+    color: white;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18), 0 2px 8px rgba(0, 0, 0, 0.1);
+    min-width: 260px;
+    max-width: 380px;
+    pointer-events: auto;
+    animation: toastIn 0.38s cubic-bezier(.21, 1.02, .73, 1) forwards;
+}
+
+.toast.hide {
+    animation: toastOut 0.3s ease-in forwards;
+}
+
+.toast-success {
+    background: linear-gradient(135deg, #10b981, #059669);
+}
+
+.toast-error {
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+}
+
+.toast-warning {
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+}
+
+.toast-info {
+    background: linear-gradient(135deg, #6366f1, #4f46e5);
+}
+
+.toast-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.25);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-size: 15px;
+}
+
+.toast-body {
+    flex: 1;
+}
+
+.toast-title {
+    font-size: 11px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    opacity: 0.85;
+    margin-bottom: 1px;
+}
+
+.toast-msg {
+    font-size: 13px;
+    font-weight: 700;
+    line-height: 1.3;
+}
+
+.toast-close {
+    width: 22px;
+    height: 22px;
+    border-radius: 7px;
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    color: white;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    flex-shrink: 0;
+    transition: background .15s;
+}
+
+.toast-close:hover {
+    background: rgba(255, 255, 255, 0.35);
+}
+
+.toast-progress {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    height: 3px;
+    border-radius: 0 0 16px 16px;
+    background: rgba(255, 255, 255, 0.45);
+    animation: toastProgress linear forwards;
+}
+
+.toast {
+    position: relative;
+    overflow: hidden;
+}
+
+@keyframes toastIn {
+    from {
+        opacity: 0;
+        transform: translateX(60px) scale(0.92);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(0) scale(1);
+    }
+}
+
+@keyframes toastOut {
+    from {
+        opacity: 1;
+        transform: translateX(0) scale(1);
+    }
+
+    to {
+        opacity: 0;
+        transform: translateX(60px) scale(0.92);
+    }
+}
+
+@keyframes toastProgress {
+    from {
+        width: 100%;
+    }
+
+    to {
+        width: 0%;
+    }
+}
+
+/* ── FORM VALIDATION ── */
+.field-error {
+    border: 2px solid #ef4444 !important;
+    background: #fff5f5 !important;
+}
+
+.field-ok {
+    border: 2px solid #10b981 !important;
+}
+
+.val-msg {
+    font-size: 10px;
+    font-weight: 800;
+    margin-top: 4px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.val-msg.err {
+    color: #ef4444;
+}
+
+.val-msg.ok {
+    color: #10b981;
+}
+
+/* ── ORDER PIPELINE STEPPER ── */
+.pipeline-step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    flex: 1;
+    position: relative;
+}
+
+.pipeline-step:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    top: 14px;
+    left: calc(50% + 14px);
+    width: calc(100% - 28px);
+    height: 2px;
+    background: #e2e8f0;
+    z-index: 0;
+}
+
+.pipeline-step.done::after {
+    background: #10b981;
+}
+
+.pipeline-step.active::after {
+    background: linear-gradient(90deg, #6366f1, #e2e8f0);
+}
+
+.pipe-dot {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 900;
+    z-index: 1;
+    flex-shrink: 0;
+}
+
+.pipe-dot.done {
+    background: #10b981;
+    color: white;
+}
+
+.pipe-dot.active {
+    background: #6366f1;
+    color: white;
+    box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.2);
+}
+
+.pipe-dot.pending {
+    background: #e2e8f0;
+    color: #94a3b8;
+}
+
+.pipe-dot.cancelled {
+    background: #ef4444;
+    color: white;
+}
+
+.pipe-label {
+    font-size: 8px;
+    font-weight: 900;
+    text-transform: uppercase;
+    text-align: center;
+    letter-spacing: 0.03em;
+}
+
+/* ── LINKED BADGE ── */
+.linked-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    border-radius: 8px;
+    font-size: 9px;
+    font-weight: 800;
+    cursor: pointer;
+    transition: all .15s;
+}
+
+.linked-badge:hover {
+    opacity: .8;
+    transform: scale(1.04);
+}
+
+/* ── EMPTY STATE ── */
+.empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 20px;
+    gap: 16px;
+}
+
+.empty-state-icon {
+    width: 80px;
+    height: 80px;
+    border-radius: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 32px;
+}
+
+.empty-state-title {
+    font-size: 15px;
+    font-weight: 900;
+    color: #334155;
+    letter-spacing: -0.01em;
+}
+
+.empty-state-sub {
+    font-size: 12px;
+    font-weight: 600;
+    color: #94a3b8;
+    text-align: center;
+    max-width: 260px;
+    line-height: 1.6;
+}
+
+/* ── SIMULATION ENGINE ── */
+#sim-engine-bar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 9000;
+    background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #0f172a 100%);
+    border-bottom: 1px solid rgba(99, 102, 241, 0.3);
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
+    display: flex;
+    align-items: center;
+    gap: 0;
+    height: 52px;
+    padding: 0 20px;
+    font-family: 'Inter', sans-serif;
+}
+
+#sim-engine-bar .sim-brand {
+    display: flex;
+    align-items: center;
+    gap-8px;
+    margin-right: 20px;
+    flex-shrink: 0;
+}
+
+#sim-engine-bar .sim-label {
+    font-size: 9px;
+    font-weight: 900;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #818cf8;
+    margin-right: 16px;
+    white-space: nowrap;
+}
+
+#sim-engine-bar .sim-clock {
+    font-size: 13px;
+    font-weight: 900;
+    color: #e2e8f0;
+    letter-spacing: 0.02em;
+    background: rgba(99, 102, 241, 0.2);
+    border: 1px solid rgba(99, 102, 241, 0.4);
+    border-radius: 10px;
+    padding: 4px 14px;
+    margin-right: 12px;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+}
+
+#sim-engine-bar .sim-speed {
+    font-size: 9px;
+    font-weight: 900;
+    color: #f59e0b;
+    background: rgba(245, 158, 11, 0.15);
+    border: 1px solid rgba(245, 158, 11, 0.3);
+    border-radius: 8px;
+    padding: 3px 10px;
+    margin-right: 14px;
+    white-space: nowrap;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+
+#sim-engine-bar .sim-divider {
+    width: 1px;
+    height: 28px;
+    background: rgba(255, 255, 255, 0.1);
+    margin: 0 14px;
+    flex-shrink: 0;
+}
+
+#sim-engine-bar .sim-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 14px;
+    border-radius: 9px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: rgba(255, 255, 255, 0.06);
+    color: #cbd5e1;
+    font-size: 10px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+    flex-shrink: 0;
+    font-family: 'Inter', sans-serif;
+}
+
+#sim-engine-bar .sim-btn:hover {
+    background: rgba(99, 102, 241, 0.25);
+    border-color: rgba(99, 102, 241, 0.6);
+    color: white;
+}
+
+#sim-engine-bar .sim-btn.active {
+    background: rgba(99, 102, 241, 0.4);
+    border-color: #6366f1;
+    color: white;
+}
+
+#sim-engine-bar .sim-btn.play-btn {
+    background: linear-gradient(135deg, #10b981, #059669);
+    border-color: #10b981;
+    color: white;
+}
+
+#sim-engine-bar .sim-btn.play-btn.paused {
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    border-color: #6366f1;
+}
+
+#sim-engine-bar .sim-btn.play-btn:hover {
+    opacity: 0.88;
+    transform: scale(1.04);
+}
+
+#sim-engine-bar .sim-metrics {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-left: auto;
+    flex-shrink: 0;
+}
+
+#sim-engine-bar .sim-metric {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+}
+
+#sim-engine-bar .sim-metric-label {
+    font-size: 8px;
+    font-weight: 900;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+
+#sim-engine-bar .sim-metric-val {
+    font-size: 12px;
+    font-weight: 900;
+    color: #e2e8f0;
+    font-variant-numeric: tabular-nums;
+}
+
+#sim-engine-bar .sim-metric-val.green {
+    color: #34d399;
+}
+
+#sim-engine-bar .sim-metric-val.red {
+    color: #f87171;
+}
+
+#sim-engine-bar .sim-metric-val.yellow {
+    color: #fbbf24;
+}
+
+#sim-engine-bar .sim-pulse {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #10b981;
+    margin-right: 8px;
+    flex-shrink: 0;
+}
+
+#sim-engine-bar .sim-pulse.active {
+    animation: simPulse 1.2s infinite;
+}
+
+#sim-engine-bar .sim-pulse.paused {
+    background: #f59e0b;
+    animation: none;
+}
+
+@keyframes simPulse {
+
+    0%,
+    100% {
+        opacity: 1;
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.5);
+    }
+
+    50% {
+        opacity: .7;
+        transform: scale(1.3);
+        box-shadow: 0 0 0 5px rgba(16, 185, 129, 0);
+    }
+}
+
+/* sim event ticker */
+#sim-ticker {
+    font-size: 9px;
+    font-weight: 700;
+    color: #64748b;
+    max-width: 240px;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    margin-left: 12px;
+    flex-shrink: 1;
+}
+
+#sim-ticker span {
+    color: #a5b4fc;
+}
+
+/* Push content down */
+body.sim-active aside,
+body.sim-active main {
+    margin-top: 52px !important;
+}
+
+body.sim-active aside {
+    top: 52px !important;
+    height: calc(100% - 52px) !important;
+}
+
+body.sim-active .chat-container {
+    bottom: 137px !important;
+}
+
+/* Sim KPI flash effect */
+@keyframes simFlash {
+    0% {
+        background: rgba(99, 102, 241, 0.15);
+    }
+
+    100% {
+        background: transparent;
+    }
+}
+
+.sim-updated {
+    animation: simFlash 0.8s ease-out;
+}
+
+/* Speed selector dropdown */
+.sim-speed-selector {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: #cbd5e1;
+    font-size: 10px;
+    font-weight: 800;
+    border-radius: 9px;
+    padding: 5px 10px;
+    cursor: pointer;
+    font-family: 'Inter', sans-serif;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    outline: none;
+    margin-right: 10px;
+}
+
+.sim-speed-selector:focus {
+    border-color: #6366f1;
+}
+
+.sim-speed-selector option {
+    background: #1e1b4b;
+    color: #e2e8f0;
+}
+
+/* ── DASHBOARD / CONTROL CENTER ── */
+.control-center-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 24px;
+}
+
+.glass-card {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    border-radius: 2rem;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.05);
+    padding: 24px;
+    transition: all 0.3s ease;
+}
+
+.glass-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 40px rgba(99, 102, 241, 0.12);
+    border-color: rgba(99, 102, 241, 0.2);
+}
+
+.status-banner {
+    padding: 10px 24px;
+    border-radius: 1rem;
+    font-size: 11px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 24px;
+}
+
+.status-stable {
+    background: #ecfdf5;
+    color: #059669;
+    border: 1px solid #10b98130;
+}
+
+.status-warning {
+    background: #fffbeb;
+    color: #d97706;
+    border: 1px solid #f59e0b30;
+}
+
+.status-danger {
+    background: #fef2f2;
+    color: #dc2626;
+    border: 1px solid #ef444430;
+}
+
+.iot-widget-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+}
+
+.iot-mini-card {
+    background: white;
+    padding: 16px;
+    border-radius: 1.5rem;
+    border: 1px solid #f1f5f9;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.weather-city-card {
+    background: linear-gradient(135deg, #1e293b, #0f172a);
+    color: white;
+    padding: 20px;
+    border-radius: 1.5rem;
+    position: relative;
+    overflow: hidden;
+}
+
+.weather-city-card::after {
+    content: '';
+    position: absolute;
+    top: -20px;
+    right: -20px;
+    width: 80px;
+    height: 80px;
+    background: radial-gradient(circle, rgba(99, 102, 241, 0.2) 0%, transparent 70%);
+    border-radius: 50%;
+}
+
+.risk-alert-item {
+    padding: 12px;
+    border-radius: 1rem;
+    background: #f8fafc;
+    border-left: 4px solid #cbd5e1;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.risk-alert-item.high { border-left-color: #ef4444; background: #fef2f2; }
+.risk-alert-item.mid { border-left-color: #f59e0b; background: #fffbeb; }
+
+/* Metrics for control center */
+.metric-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.metric-label {
+    font-size: 10px;
+    font-weight: 800;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.metric-value {
+    font-size: 1.5rem;
+    font-weight: 900;
+    color: #1e293b;
+    letter-spacing: -0.02em;
+}
