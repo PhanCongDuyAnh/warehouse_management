@@ -1447,6 +1447,18 @@ body.sim-active .chat-container {
     z-index: 1000 !important;
 }
 
+.vehicle-marker.focused {
+    border-color: #f59e0b !important;
+    box-shadow: 0 0 20px #f59e0b, 0 0 40px rgba(245, 158, 11, 0.6) !important;
+    animation: markerHighlight 1.5s infinite !important;
+    z-index: 1001 !important;
+}
+
+@keyframes markerHighlight {
+    0%, 100% { transform: scale(1.1); box-shadow: 0 0 15px #f59e0b; }
+    50% { transform: scale(1.4); box-shadow: 0 0 30px #f59e0b, 0 0 50px rgba(245, 158, 11, 0.6); }
+}
+
 @keyframes simPulse {
     0% { transform: scale(0.95); opacity: 0.8; }
     50% { transform: scale(1.05); opacity: 1; }

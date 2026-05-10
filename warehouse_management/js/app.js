@@ -40,6 +40,7 @@ function warehouseApp() {
         fefoSuggestion: null,
         showShipDetail: false,
         selectedShipItem: null,
+        focusedVehicleId: null,
 
         // Chatbot
         userInput: '', isTyping: false, showSuggestions: true,
@@ -294,6 +295,19 @@ function warehouseApp() {
         getIotMethods(),
         alertMethods,
         smartInvMethods,
-        getPdfMethods()
+        getPdfMethods(),
+        {
+            locateVehicle(s) {
+                if (s.status === 'Đã giao') {
+                    this.toast(`Vận đơn ${s.trackId} đã hoàn thành giao hàng.`, 'info');
+                    return;
+                }
+                this.currentTab = 'logistics';
+                this.$nextTick(() => {
+                    this.focusVehicle(s);
+                    this.toast(`Đã định vị thành công phương tiện ${s.trackId}`, 'success', 'GPS Tracking');
+                });
+            }
+        }
     );
 }

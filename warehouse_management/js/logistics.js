@@ -73,8 +73,9 @@ function getLogisticsMethods() {
                     s.destCoords = s.destCoords || [21.0 + (Math.random() - 0.5) * 0.2, 105.8 + (Math.random() - 0.5) * 0.2];
                 }
 
+                const isFocused = s.trackId === this.focusedVehicleId;
                 const icon = L.divIcon({
-                    html: `<div class="vehicle-marker ${s.status === 'Đã nhận' ? 'delivered' : ''}" style="border-color:${VEHICLE_CONFIGS[s.vehicleType]?.color || '#6366f1'}">
+                    html: `<div class="vehicle-marker ${s.status === 'Đã nhận' ? 'delivered' : ''} ${isFocused ? 'focused' : ''}" style="border-color:${VEHICLE_CONFIGS[s.vehicleType]?.color || '#6366f1'}">
                             <i class="fas ${VEHICLE_CONFIGS[s.vehicleType]?.icon || 'fa-truck'}"></i>
                            </div>`,
                     className: 'custom-div-icon',
@@ -84,6 +85,7 @@ function getLogisticsMethods() {
 
                 if (markers[s.trackId]) {
                     markers[s.trackId].setLatLng(s.currentCoords);
+                    markers[s.trackId].setIcon(icon);
                 } else {
                     markers[s.trackId] = L.marker(s.currentCoords, { icon }).addTo(map)
                         .bindPopup(`<b>${s.trackId}</b><br>Đơn: ${s.orderId}<br>Tài xế: ${s.driverName}`);
@@ -106,9 +108,11 @@ function getLogisticsMethods() {
         },
 
         focusVehicle(s) {
+            this.focusedVehicleId = s.trackId;
             if (map && s.currentCoords) {
                 map.flyTo(s.currentCoords, 15);
                 if (markers[s.trackId]) markers[s.trackId].openPopup();
+                this.updateMapMarkers();
             }
         }
     };

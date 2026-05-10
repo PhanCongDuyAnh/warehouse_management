@@ -1074,6 +1074,10 @@
                                         class="px-4 py-2 bg-slate-100 hover:bg-green-600 hover:text-white text-slate-600 rounded-xl text-[9px] font-black uppercase transition flex items-center gap-2">
                                         <i class="fas fa-file-pdf"></i> Xuất Phiếu
                                     </button>
+                                    <button @click="locateVehicle(s)" x-show="s.status !== 'Đã giao'"
+                                        class="px-4 py-2 bg-indigo-50 hover:bg-indigo-600 hover:text-white text-indigo-600 rounded-xl text-[9px] font-black uppercase transition flex items-center gap-2">
+                                        <i class="fas fa-location-crosshairs"></i> Định vị GPS
+                                    </button>
                                 </div>
                                 <div class="flex items-center gap-3">
                                     <span x-show="s.status !== 'Đã giao'"
