@@ -7,27 +7,43 @@ function getUiMethods() {
         persist() { saveDB(this); },
 
         // ── TOAST NOTIFICATION ──
-        toast(msg, type = 'success', title = null, duration = 3500) {
+        toast(msg, type = 'success', title = 'Thông báo') {
             const container = document.getElementById('toast-container');
             if (!container) return;
-            const icons = { success: 'fa-check', error: 'fa-xmark', warning: 'fa-triangle-exclamation', info: 'fa-circle-info' };
-            const titles = { success: 'Thành công', error: 'Lỗi', warning: 'Cảnh báo', info: 'Thông tin' };
-            const el = document.createElement('div');
-            el.className = `toast toast-${type}`;
-            el.innerHTML = `
-                <div class="toast-icon"><i class="fas ${icons[type] || 'fa-check'}"></i></div>
+
+            const icons = {
+                success: 'fa-circle-check',
+                error: 'fa-circle-xmark',
+                warning: 'fa-triangle-exclamation',
+                info: 'fa-circle-info'
+            };
+
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            toast.innerHTML = `
+                <div class="toast-icon">
+                    <i class="fas ${icons[type] || 'fa-bell'}"></i>
+                </div>
                 <div class="toast-body">
-                    <div class="toast-title">${title || titles[type] || 'Thông báo'}</div>
+                    <div class="toast-title">${title}</div>
                     <div class="toast-msg">${msg}</div>
                 </div>
-                <button class="toast-close" onclick="this.closest('.toast').remove()"><i class="fas fa-xmark"></i></button>
-                <div class="toast-progress" style="animation-duration:${duration}ms"></div>
+                <button class="toast-close"><i class="fas fa-xmark"></i></button>
+                <div class="toast-progress">
+                    <div class="toast-progress-bar" style="animation-duration: 4000ms"></div>
+                </div>
             `;
-            container.appendChild(el);
-            setTimeout(() => {
-                el.classList.add('hide');
-                setTimeout(() => el.remove(), 320);
-            }, duration);
+
+            container.appendChild(toast);
+
+            const closeBtn = toast.querySelector('.toast-close');
+            const dismiss = () => {
+                toast.classList.add('hide');
+                setTimeout(() => toast.remove(), 400);
+            };
+
+            closeBtn.onclick = dismiss;
+            setTimeout(dismiss, 4000);
         },
 
         // ── BỘ LỌC ──

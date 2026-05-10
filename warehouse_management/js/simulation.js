@@ -151,6 +151,11 @@ function getSimulationMethods() {
                 if (s.damagedItems >= 10 && s.damagedItems < 11) this.toast('10+ SKU bị hư hỏng — cần kiểm tra kho ngay!', 'error', 'Cảnh báo hàng hỏng');
             }
 
+            // ── 11. Alert System Monitor (Real-time)
+            if (typeof this.monitorSystem === 'function') {
+                this.monitorSystem();
+            }
+
             this.persist();
             this.simBroadcastUpdate();
         },

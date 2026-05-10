@@ -31,7 +31,7 @@ function warehouseApp() {
         showSkuDuplicateConfirm: false,
         skuDuplicateTarget: { sku: '', name: '', existingName: '', qty: 0 },
         deleteTarget: { list: '', id: '', label: '' },
-        orderFilter: 'Tất cả', inventoryFilter: 'Tất cả',
+        orderFilter: 'Tất cả', inventoryFilter: 'Tất cả', alertFilter: 'Tất cả',
         inboundSearch: '', outboundSearch: '', shippingSearch: '',
         smartInvTab: 'all',
         smartInvSearch: '',
@@ -93,8 +93,9 @@ function warehouseApp() {
         inboundList: db.inboundList,
         outboundList: db.outboundList,
         shippingList: db.shippingList,
-        alerts: db.alerts,
+        alerts: (db.alerts || []).map(a => ({ ...a, id: a.id || ('ALRT-' + Math.random().toString(36).substr(2, 9)) })),
         employeeList: db.employeeList,
+        snapshots: loadSnapshots(),
 
         // Form tạm
         newOrder: { customer: '', product: '', priority: 'Thường', phone: '', address: '', sku: '', qty: 1 },
@@ -155,6 +156,14 @@ function warehouseApp() {
             });
             if (this.isLoggedIn) document.body.classList.add('sim-active');
         },
+    };
+
+    // ── Alert System Methods ──
+    const alertMethods = {
+        filteredAlerts() {
+            if (this.alertFilter === 'Tất cả') return this.alerts;
+            return this.alerts.filter(a => a.level === this.alertFilter);
+        }
     };
 
     // ── Smart Inventory Methods ──
@@ -267,6 +276,11 @@ function warehouseApp() {
         getUiMethods(),
         getLogisticsMethods(),
         getFinanceMethods(),
+        getAlertMethods(),
+        getExcelMethods(),
+        getMaintenanceMethods(),
+        getI18nMethods(),
+        alertMethods,
         smartInvMethods,
         getPdfMethods()
     );

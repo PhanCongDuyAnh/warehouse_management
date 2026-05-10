@@ -266,7 +266,8 @@ function getCrudMethods() {
                 this.toast('Vui lòng chọn ngày cảnh báo.', 'error', 'Thiếu thông tin');
                 return;
             }
-            this.alerts.unshift({ ...this.newAlrt, qty });
+            const alertId = 'ALRT-' + Date.now() + '-' + Math.floor(Math.random() * 1000);
+            this.alerts.unshift({ ...this.newAlrt, qty, id: alertId });
             this.persist();
             this.showAddAlert = false;
             this.newAlrt = { name: '', type: 'Sắp hết hàng', level: 'Trung bình', qty: 0, alertDate: new Date().toISOString().split('T')[0], handling: 'Đặt hàng bổ sung', note: '' };

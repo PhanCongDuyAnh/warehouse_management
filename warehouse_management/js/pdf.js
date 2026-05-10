@@ -184,6 +184,106 @@ function getPdfMethods() {
             doc.text('Cam on ban da su dung dich vu cua TRITO Logistics.', 105, pageHeight - 20, { align: 'center' });
             doc.text('Website: www.trito.vn | Hotline: 1900-TRITO', 105, pageHeight - 15, { align: 'center' });
             doc.text('Trang 1/1', 196, pageHeight - 10, { align: 'right' });
+        },
+        async exportSummaryReportPdf() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF('p', 'mm', 'a4');
+            const primaryColor = [79, 70, 229]; // Indigo-600
+            const secondaryColor = [30, 41, 59]; // Slate-800
+
+            // 1. Header & Branding
+            this._buildPdfHeader(doc, 'BÁO CÁO VẬN HÀNH TỔNG HỢP', 'AI-REPORT-' + Date.now());
+            
+            let currentY = 45;
+
+            // 2. Operational KPIs (3 columns)
+            doc.setFillColor(248, 250, 252);
+            doc.roundedRect(14, currentY, 182, 35, 3, 3, 'F');
+            
+            doc.setFontSize(9);
+            doc.setTextColor(100);
+            doc.text('TỔNG LỢI NHUẬN', 25, currentY + 12);
+            doc.text('CHẤT LƯỢNG KHO', 85, currentY + 12);
+            doc.text('CHI PHÍ VẬN HÀNH', 145, currentY + 12);
+
+            doc.setFontSize(14);
+            doc.setFont('helvetica', 'bold');
+            doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+            doc.text(this.simFmt(this.simState.profit) + 'đ', 25, currentY + 22);
+            doc.text(this.simState.qualityPct + '%', 85, currentY + 22);
+            doc.setTextColor(220, 38, 38); // Red
+            doc.text(this.simFmt(this.simState.totalCost) + 'đ', 145, currentY + 22);
+
+            currentY += 45;
+
+            // 3. AI Insights & Risks
+            doc.setFontSize(12);
+            doc.setTextColor(secondaryColor[0], secondaryColor[1], secondaryColor[2]);
+            doc.text('DỰ ĐOÁN & RỦI RO (AI INSIGHTS)', 14, currentY);
+            
+            const alertData = this.alerts.slice(0, 5).map(a => [
+                a.alertDate,
+                a.level,
+                a.name,
+                a.note
+            ]);
+
+            doc.autoTable({
+                startY: currentY + 5,
+                head: [['Ngày', 'Mức độ', 'Loại', 'Nội dung cảnh báo']],
+                body: alertData,
+                theme: 'striped',
+                headStyles: { fillColor: [239, 68, 68] }, // Red for risks
+                styles: { fontSize: 8 }
+            });
+
+            currentY = doc.lastAutoTable.finalY + 15;
+
+            // 4. Financial Charts (Capture via html2canvas)
+            doc.text('BIỂU ĐỒ PHÂN TÍCH TÀI CHÍNH', 14, currentY);
+            try {
+                const chartEl = document.getElementById('revenueMainChart') || document.querySelector('.chart-container');
+                if (chartEl) {
+                    const canvas = await html2canvas(chartEl, { scale: 2 });
+                    const imgData = canvas.toDataURL('image/png');
+                    doc.addImage(imgData, 'PNG', 14, currentY + 5, 182, 80);
+                    currentY += 90;
+                }
+            } catch (e) {
+                doc.text('[Không thể trích xuất biểu đồ]', 14, currentY + 10);
+                currentY += 20;
+            }
+
+            // 5. Inventory Overview
+            if (currentY > 240) { doc.addPage(); currentY = 20; }
+            doc.text('DANH MỤC TỒN KHO CHI TIẾT', 14, currentY);
+            
+            const invData = this.inventoryList.slice(0, 15).map(i => [
+                i.id, i.name, i.stock, i.status, i.warehouseZone
+            ]);
+
+            doc.autoTable({
+                startY: currentY + 5,
+                head: [['SKU', 'Tên sản phẩm', 'Số lượng', 'Trạng thái', 'Zone']],
+                body: invData,
+                theme: 'grid',
+                headStyles: { fillColor: primaryColor },
+                styles: { fontSize: 8 }
+            });
+
+            // 6. QR Code & Timestamp Footer
+            const pageHeight = doc.internal.pageSize.height;
+            this._buildQrCode(doc, `https://trito.vn/report/${Date.now()}`, 165, pageHeight - 45);
+            
+            doc.setFontSize(8);
+            doc.setTextColor(150);
+            doc.setFont('helvetica', 'italic');
+            doc.text(`Thời gian xuất: ${new Date().toLocaleString('vi-VN')}`, 14, pageHeight - 15);
+            
+            this._buildPdfFooter(doc);
+
+            doc.save(`Summary_Report_${Date.now()}.pdf`);
+            this.toast('Đã xuất báo cáo tổng hợp PDF!', 'success');
         }
     };
 }

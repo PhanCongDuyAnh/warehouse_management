@@ -48,7 +48,12 @@ function getAuthMethods() {
         // ── ALLOWED TABS based on role ──
         allowedTabs() {
             const role = this.currentUser?.role || 'warehouse';
-            return ROLE_TABS[role] || ROLE_TABS['warehouse'];
+            const tabs = ROLE_TABS[role] || ROLE_TABS['warehouse'];
+            const translated = {};
+            Object.keys(tabs).forEach(key => {
+                translated[key] = this.t(key);
+            });
+            return translated;
         },
     };
 }

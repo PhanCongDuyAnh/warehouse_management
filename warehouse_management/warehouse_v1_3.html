@@ -16,10 +16,16 @@
     <!-- PDF & QR Libraries -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="js/alerts.js"></script>
+    <script src="js/excel.js"></script>
+    <script src="js/maintenance.js"></script>
+    <script src="js/i18n.js"></script>
 </head>
 
 <body class="bg-slate-50 text-slate-800" x-data="warehouseApp()" x-init="init()">
@@ -178,8 +184,8 @@
                 </div>
 
                 <div class="bg-white/5 backdrop-blur-xl border border-white/10 rounded-[2rem] p-10 shadow-2xl">
-                    <h2 class="text-2xl font-black text-white mb-2 tracking-tight">Đăng nhập hệ thống</h2>
-                    <p class="text-slate-400 text-sm font-bold mb-8">Vui lòng xác thực để truy cập</p>
+                    <h2 class="text-2xl font-black text-white mb-2 tracking-tight" x-text="t('login')"></h2>
+                    <p class="text-slate-400 text-sm font-bold mb-8" x-text="lang === 'vi' ? 'Vui lòng xác thực để truy cập' : 'Please authenticate to access'"></p>
 
                     <!-- Error -->
                     <div x-show="loginError" x-transition
@@ -195,16 +201,16 @@
                             <div class="relative">
                                 <i class="fas fa-user absolute left-5 top-1/2 -translate-y-1/2 text-slate-500"></i>
                                 <input x-model="loginForm.username" @keydown.enter="doLogin()" type="text"
-                                    placeholder="Nhập tên đăng nhập..."
+                                    :placeholder="lang === 'vi' ? 'Nhập tên đăng nhập...' : 'Enter username...'"
                                     class="w-full pl-12 pr-6 py-4 bg-white/10 border border-white/15 rounded-2xl text-white placeholder-slate-500 font-bold focus:outline-none focus:border-indigo-400 transition">
                             </div>
                         </div>
                         <div>
-                            <label class="block text-[10px] font-black uppercase text-slate-400 mb-2">Mật khẩu</label>
+                            <label class="block text-[10px] font-black uppercase text-slate-400 mb-2" x-text="lang === 'vi' ? 'Mật khẩu' : 'Password'"></label>
                             <div class="relative">
                                 <i class="fas fa-lock absolute left-5 top-1/2 -translate-y-1/2 text-slate-500"></i>
                                 <input x-model="loginForm.password" @keydown.enter="doLogin()"
-                                    :type="showPassword ? 'text' : 'password'" placeholder="Nhập mật khẩu..."
+                                    :type="showPassword ? 'text' : 'password'" :placeholder="lang === 'vi' ? 'Nhập mật khẩu...' : 'Enter password...'"
                                     class="w-full pl-12 pr-14 py-4 bg-white/10 border border-white/15 rounded-2xl text-white placeholder-slate-500 font-bold focus:outline-none focus:border-indigo-400 transition">
                                 <button @click="showPassword = !showPassword" type="button"
                                     class="absolute right-5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition">
@@ -214,15 +220,14 @@
                         </div>
                         <button @click="doLogin()" :disabled="loginLoading"
                             class="w-full py-4 bg-indigo-600 hover:bg-indigo-500 text-white font-black uppercase text-sm rounded-2xl transition-all shadow-xl hover:shadow-indigo-500/30 disabled:opacity-60 disabled:cursor-not-allowed">
-                            <span x-show="!loginLoading"><i class="fas fa-sign-in-alt mr-2"></i>Đăng nhập</span>
-                            <span x-show="loginLoading"><i class="fas fa-spinner fa-spin mr-2"></i>Đang xác
-                                thực...</span>
+                            <span x-show="!loginLoading"><i class="fas fa-sign-in-alt mr-2"></i><span x-text="t('login')"></span></span>
+                            <span x-show="loginLoading"><i class="fas fa-spinner fa-spin mr-2"></i><span x-text="lang === 'vi' ? 'Đang xác thực...' : 'Authenticating...'"></span></span>
                         </button>
                     </div>
 
                     <!-- Mobile demo accounts -->
                     <div class="lg:hidden mt-8 pt-6 border-t border-white/10">
-                        <p class="text-[10px] font-black uppercase text-slate-400 mb-3">Chọn tài khoản demo</p>
+                        <p class="text-[10px] font-black uppercase text-slate-400 mb-3" x-text="t('select_account')"></p>
                         <div class="space-y-2">
                             <template x-for="acc in demoAccounts" :key="acc.username">
                                 <button @click="loginForm.username = acc.username; loginForm.password = acc.password"
@@ -300,15 +305,19 @@
             <!-- Header -->
             <header class="flex items-center justify-between mb-8">
                 <div>
-                    <h2 class="text-3xl font-black text-slate-900 tracking-tight" x-text="tabTitles[currentTab]"></h2>
+                    <h2 class="text-3xl font-black text-slate-900 tracking-tight" x-text="t(currentTab)"></h2>
                     <div class="flex items-center gap-2 text-slate-400 font-bold mt-1">
-                        <span class="text-[10px] uppercase tracking-widest">Hệ thống</span>
+                        <span class="text-[10px] uppercase tracking-widest" x-text="lang === 'vi' ? 'Hệ thống' : 'System'"></span>
                         <i class="fas fa-chevron-right text-[8px]"></i>
                         <span class="text-[10px] uppercase tracking-widest text-indigo-600"
-                            x-text="tabTitles[currentTab]"></span>
+                            x-text="t(currentTab)"></span>
                     </div>
                 </div>
                 <div class="flex items-center gap-4">
+                    <div class="flex bg-white/50 p-1 rounded-xl border">
+                        <button @click="switchLang('vi')" class="px-2 py-1 rounded-lg text-[10px] font-black uppercase transition" :class="lang === 'vi' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-400'">VI</button>
+                        <button @click="switchLang('en')" class="px-2 py-1 rounded-lg text-[10px] font-black uppercase transition" :class="lang === 'en' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-400'">EN</button>
+                    </div>
                     <div class="relative cursor-pointer hover:scale-110 transition" @click="currentTab = 'alerts'"
                         x-show="can('view_alerts')">
                         <i class="fas fa-bell text-slate-400 text-xl"></i>
@@ -323,10 +332,10 @@
                             <i :class="currentUser?.icon || 'fas fa-user'"></i>
                         </div>
                         <div>
-                            <p class="text-xs font-black leading-none" x-text="currentUser?.name || 'Người dùng'"></p>
+                            <p class="text-xs font-black leading-none" x-text="currentUser?.name || 'User'"></p>
                             <span class="text-[9px] font-black uppercase"
                                 :style="'color:' + (currentUser?.color || '#6366f1')"
-                                x-text="currentUser?.roleLabel || ''"></span>
+                                x-text="lang === 'vi' ? currentUser?.roleLabel : (currentUser?.role.toUpperCase())"></span>
                         </div>
                     </div>
                 </div>
@@ -342,8 +351,8 @@
                             <i class="fas" :class="systemStatus().icon"></i>
                         </div>
                         <div>
-                            <span class="block">Hệ thống: <b x-text="systemStatus().label"></b></span>
-                            <span class="text-[9px] opacity-80 font-bold" x-text="systemStatus().msg"></span>
+                            <span class="block" x-text="(lang === 'vi' ? 'Hệ thống: ' : 'System: ') + systemStatus().label"></span>
+                            <span class="text-[10px] opacity-80" x-text="systemStatus().msg"></span>
                         </div>
                     </div>
                     <div class="ml-auto flex items-center gap-4">
@@ -379,52 +388,72 @@
                     </button>
                 </div>
 
+                <!-- NEW: Critical Alerts Banner (AI Powered) -->
+                <template x-if="activeCriticalAlerts().length > 0">
+                    <div class="space-y-3">
+                        <template x-for="alert in activeCriticalAlerts()" :key="alert.id">
+                            <div class="alert-banner critical">
+                                <div class="alert-banner-icon">
+                                    <i :class="alert.icon || 'fas fa-exclamation-triangle'"></i>
+                                </div>
+                                <div class="alert-banner-content">
+                                    <p class="alert-banner-title" x-text="'CẢNH BÁO: ' + alert.name"></p>
+                                    <p class="alert-banner-desc" x-text="alert.note"></p>
+                                </div>
+                                <div class="alert-pulse-dot"></div>
+                                <button @click="currentTab = 'alerts'" class="px-4 py-2 bg-red-600 text-white text-[10px] font-black uppercase rounded-xl hover:bg-red-700 transition">Xử lý ngay</button>
+                            </div>
+                        </template>
+                    </div>
+                </template>
+
                 <!-- Main KPI Grid -->
-                <div class="grid grid-cols-2 lg:grid-cols-6 gap-4">
-                    <div class="glass-card flex flex-col justify-between h-32">
-                        <span class="metric-label">Tổng tồn kho</span>
-                        <div class="flex items-end justify-between">
-                            <span class="metric-value" x-text="inventoryList.reduce((s,i)=>s+i.stock,0)"></span>
-                            <i class="fas fa-boxes-stacked text-slate-200 text-xl"></i>
+                <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div class="bg-indigo-600 rounded-[2.5rem] p-8 text-white shadow-xl shadow-indigo-900/20 relative overflow-hidden group">
+                        <div class="relative z-10 flex items-center justify-between">
+                            <div>
+                                <p class="text-[10px] font-black opacity-70 uppercase tracking-widest" x-text="t('total_revenue')"></p>
+                                <h3 class="text-2xl font-black mt-1" x-text="simFmt(simState.profit + simState.totalCost) + 'đ'"></h3>
+                            </div>
+                            <div class="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-md">
+                                <i class="fas fa-wallet text-xl"></i>
+                            </div>
                         </div>
                     </div>
-                    <div class="glass-card flex flex-col justify-between h-32 border-b-4 border-indigo-500">
-                        <span class="metric-label">Tổng đơn hàng</span>
-                        <div class="flex items-end justify-between">
-                            <span class="metric-value" x-text="orders.length + 1040"></span>
-                            <i class="fas fa-shopping-cart text-indigo-100 text-xl"></i>
+
+                    <div class="bg-emerald-600 rounded-[2.5rem] p-8 text-white shadow-xl shadow-emerald-900/20 relative overflow-hidden group">
+                        <div class="relative z-10 flex items-center justify-between">
+                            <div>
+                                <p class="text-[10px] font-black opacity-70 uppercase tracking-widest" x-text="t('net_profit')"></p>
+                                <h3 class="text-2xl font-black mt-1" x-text="simFmt(simState.profit) + 'đ'"></h3>
+                            </div>
+                            <div class="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-md">
+                                <i class="fas fa-chart-line text-xl"></i>
+                            </div>
                         </div>
                     </div>
-                    <div class="glass-card flex flex-col justify-between h-32">
-                        <span class="metric-label">Doanh thu</span>
-                        <div class="flex items-end justify-between">
-                            <span class="metric-value text-indigo-600"
-                                x-text="simFmt(Math.round(simState.totalRevenue * (1 + simTickCount/24*0.005))) + 'đ'"></span>
+
+                    <div class="bg-slate-900 rounded-[2.5rem] p-8 text-white shadow-xl relative overflow-hidden group">
+                        <div class="relative z-10 flex items-center justify-between">
+                            <div>
+                                <p class="text-[10px] font-black opacity-70 uppercase tracking-widest" x-text="t('inventory_quality')"></p>
+                                <h3 class="text-2xl font-black mt-1" x-text="simState.qualityPct + '%'"></h3>
+                            </div>
+                            <div class="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-md">
+                                <i class="fas fa-shield-heart text-xl"></i>
+                            </div>
                         </div>
                     </div>
-                    <div class="glass-card flex flex-col justify-between h-32">
-                        <span class="metric-label">Lợi nhuận ròng</span>
-                        <div class="flex items-end justify-between">
-                            <span class="metric-value" :class="simState.profit >= 0 ? 'text-green-600' : 'text-red-500'"
-                                x-text="simFmt(simState.profit) + 'đ'"></span>
-                        </div>
-                    </div>
-                    <div class="glass-card flex flex-col justify-between h-32">
-                        <span class="metric-label">Chi phí Log</span>
-                        <div class="flex items-end justify-between">
-                            <span class="metric-value text-orange-600"
-                                x-text="simFmt(simState.logisticsCost + simState.fuelCost) + 'đ'"></span>
-                        </div>
-                    </div>
-                    <div class="glass-card flex flex-col justify-between h-32"
-                        :class="inventoryList.filter(i=>i.quality < 60).length > 0 ? 'border-b-4 border-red-500' : ''">
-                        <span class="metric-label">Nguy cơ hỏng</span>
-                        <div class="flex items-end justify-between">
-                            <span class="metric-value"
-                                :class="inventoryList.filter(i=>i.quality < 60).length > 0 ? 'text-red-600' : 'text-slate-400'"
-                                x-text="inventoryList.filter(i=>i.quality < 60).length"></span>
-                            <i class="fas fa-biohazard"
-                                :class="inventoryList.filter(i=>i.quality < 60).length > 0 ? 'text-red-100' : 'text-slate-100'"></i>
+
+                    <div class="bg-white rounded-[2.5rem] p-8 border shadow-sm relative overflow-hidden group">
+                        <div class="relative z-10 flex items-center justify-between">
+                            <div>
+                                <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest" x-text="t('order_delivery')"></p>
+                                <h3 class="text-2xl font-black mt-1 text-slate-900">94.2%</h3>
+                            </div>
+                            <div class="w-12 h-12 bg-indigo-50 rounded-2xl flex items-center justify-center">
+                                <i class="fas fa-truck-fast text-indigo-600 text-xl"></i>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -556,11 +585,15 @@
                     </div>
 
                     <div class="bg-slate-900 rounded-[2.5rem] p-6 border border-indigo-900 flex flex-col h-full">
-                        <div class="flex items-center gap-3 mb-6">
-                            <div class="w-8 h-8 bg-indigo-600 rounded-xl flex items-center justify-center">
-                                <i class="fas fa-satellite-dish text-white text-xs"></i>
+                        <div class="flex items-center justify-between mb-8">
+                            <div>
+                                <h3 class="text-sm font-black text-white uppercase tracking-widest" x-text="t('last_event')"></h3>
+                                <p class="text-[10px] text-slate-400 font-bold mt-1" x-text="lang === 'vi' ? 'Nhật ký vận hành thời gian thực' : 'Real-time operational logs'"></p>
                             </div>
-                            <p class="text-xs font-black text-white">Live Event Log</p>
+                            <div class="flex items-center gap-2">
+                                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                                <span class="text-[10px] font-black text-emerald-600 uppercase tracking-widest" x-text="lang === 'vi' ? 'Trực tiếp' : 'Live'"></span>
+                            </div>
                         </div>
                         <div class="flex-1 space-y-3 overflow-y-auto pr-2 no-scrollbar">
                             <template x-for="(ev, idx) in simEventLog.slice(0, 10)" :key="idx">
@@ -667,11 +700,10 @@
                         <!-- Search -->
                         <div class="relative flex-1 max-w-xs">
                             <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
-                            <input type="text" x-model="smartInvSearch" placeholder="Tìm SKU hoặc tên..." class="w-full pl-10 pr-4 py-2.5 bg-slate-50 rounded-xl text-sm font-bold outline-none focus:ring-2 ring-indigo-400 transition">
+                            <input type="text" x-model="smartInvSearch" :placeholder="t('search_sku')" class="w-full pl-10 pr-4 py-2.5 bg-slate-50 rounded-xl text-sm font-bold outline-none focus:ring-2 ring-indigo-400 transition">
                         </div>
                         <!-- Add button -->
-                        <button @click="showAddProduct = true" class="shrink-0 bg-indigo-600 text-white px-6 py-2.5 rounded-xl text-[10px] font-black uppercase shadow-lg hover:bg-indigo-700 transition flex items-center gap-2">
-                            <i class="fas fa-plus"></i>Nhập hàng mới
+                        <button @click="showAddProduct = true" class="shrink-0 bg-indigo-600 text-white px-6 py-2.5 rounded-xl text-[10px] font-black uppercase shadow-lg hover:bg-indigo-700 transition flex items-center gap-2" x-text="t('add_product')">
                         </button>
                     </div>
                     <!-- Zone filter tabs -->
@@ -1003,6 +1035,10 @@
                         <input type="text" x-model="shippingSearch" placeholder="Tìm mã vận đơn..."
                             class="w-full pl-12 pr-6 py-4 rounded-2xl border-none shadow-sm focus:ring-2 ring-indigo-500 font-bold">
                     </div>
+                    <button @click="exportShippingExcel()"
+                        class="bg-emerald-50 text-emerald-600 px-6 py-4 rounded-2xl text-[10px] font-black uppercase shadow-sm border border-emerald-100 hover:bg-emerald-600 hover:text-white transition flex items-center gap-2">
+                        <i class="fas fa-file-excel"></i> Xuất danh sách
+                    </button>
                     <button @click="showAddShipping = true"
                         class="bg-indigo-600 text-white px-8 py-4 rounded-2xl text-[10px] font-black uppercase shadow-lg">Tạo
                         vận chuyển</button>
@@ -1127,7 +1163,8 @@
                                         <i class="fas fa-car-burst text-lg" :class="simState.activeTraffic ? 'animate-shake' : ''"></i>
                                         <div class="text-left">
                                             <p class="text-[10px] font-black uppercase leading-none">Tắc đường / Tai nạn</p>
-                                            <p class="text-[8px] font-bold opacity-60">Tốc độ -70% | Xăng +40%</p>
+                                            <p class="text-[10px] font-black uppercase leading-none">Traffic / Accident</p>
+                                            <p class="text-[8px] font-bold opacity-60">Speed -70% | Fuel +40%</p>
                                         </div>
                                     </div>
                                     <div class="w-2 h-2 rounded-full" :class="simState.activeTraffic ? 'bg-white animate-pulse' : 'bg-slate-300'"></div>
@@ -1137,7 +1174,7 @@
 
                         <!-- Vehicle Telemetry List -->
                         <div class="bg-white rounded-[2rem] p-6 shadow-sm border flex-1">
-                            <h4 class="text-[10px] font-black uppercase text-slate-400 mb-4 tracking-widest">Đang di chuyển (<span x-text="shippingList.filter(s => s.status !== 'Đã giao').length"></span>)</h4>
+                            <h4 class="text-[10px] font-black uppercase text-slate-400 mb-4 tracking-widest">In-Transit (<span x-text="shippingList.filter(s => s.status !== 'Đã giao').length"></span>)</h4>
                             <div class="space-y-4">
                                 <template x-for="s in shippingList.filter(s => s.status !== 'Đã giao')" :key="s.trackId">
                                     <div class="p-4 rounded-2xl bg-slate-50 border border-slate-100 hover:border-indigo-300 transition cursor-pointer"
@@ -1227,88 +1264,98 @@
 
 
 
-            <!-- TAB: CẢNH BÁO -->
-            <div x-show="currentTab === 'alerts'" class="space-y-6" x-transition>
-                <div class="flex justify-between items-center bg-white p-6 rounded-3xl border shadow-sm">
-                    <h3 class="font-black uppercase text-red-600">Danh sách cảnh báo hệ thống</h3>
-                    <button @click="showAddAlert = true"
-                        class="bg-red-600 text-white px-6 py-2 rounded-xl text-[10px] font-black uppercase">Thêm cảnh
-                        báo</button>
+            <!-- TAB: CẢNH BÁO (ALERTS 4.0) -->
+            <div x-show="currentTab === 'alerts'" class="space-y-6" x-transition x-cloak>
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-8 rounded-[2.5rem] border shadow-sm">
+                    <div>
+                        <h3 class="text-xl font-black uppercase text-slate-800 tracking-tighter italic flex items-center gap-3">
+                            <span class="w-10 h-10 bg-red-100 rounded-2xl flex items-center justify-center"><i class="fas fa-shield-halved text-red-600"></i></span>
+                            Trung tâm cảnh báo Real-time
+                        </h3>
+                        <p class="text-slate-400 text-[10px] font-bold uppercase tracking-widest mt-1">Giám sát rủi ro toàn hệ thống dựa trên AI & IoT</p>
+                    </div>
+                    <div class="flex items-center gap-3 w-full md:w-auto">
+                        <select x-model="alertFilter" class="bg-slate-50 border-none rounded-2xl px-6 py-3 text-[10px] font-black uppercase shadow-inner outline-none">
+                            <option value="Tất cả">Tất cả mức độ</option>
+                            <option value="Khẩn cấp">Khẩn cấp</option>
+                            <option value="Trung bình">Cảnh báo</option>
+                            <option value="Thấp">Thông tin</option>
+                        </select>
+                        <button @click="showAddAlert = true"
+                            class="bg-red-600 text-white px-8 py-3 rounded-2xl text-[10px] font-black uppercase shadow-xl shadow-red-200 hover:bg-red-700 transition flex-1 md:flex-none">
+                            <i class="fas fa-plus mr-2"></i>Tạo cảnh báo
+                        </button>
+                    </div>
                 </div>
-                <div class="bg-white rounded-[2.5rem] shadow-sm border overflow-hidden">
-                    <table class="w-full text-left">
-                        <thead class="bg-red-50 text-red-800 text-[10px] font-black uppercase border-b border-red-100">
-                            <tr>
-                                <th class="px-6 py-5">Sản phẩm</th>
-                                <th class="px-6 py-5">Loại cảnh báo</th>
-                                <th class="px-6 py-5">Mức độ</th>
-                                <th class="px-6 py-5 text-center">Tồn kho</th>
-                                <th class="px-6 py-5">Ngày cảnh báo</th>
-                                <th class="px-6 py-5">Cách xử lý</th>
-                                <th class="px-6 py-5">Thao tác</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-red-50 font-bold text-sm">
-                            <template x-for="a in alerts">
-                                <tr class="bg-red-50/10 hover:bg-red-50/20">
-                                    <td class="px-6 py-4 text-slate-900 font-black" x-text="a.name"></td>
-                                    <td class="px-6 py-4 text-red-600 italic text-[10px] uppercase" x-text="a.type">
-                                    </td>
-                                    <td class="px-6 py-4">
-                                        <span
-                                            :class="a.level === 'Khẩn cấp' ? 'bg-red-700' : a.level === 'Cao' ? 'bg-red-500' : a.level === 'Trung bình' ? 'bg-orange-500' : 'bg-yellow-500'"
-                                            class="text-white px-3 py-1 rounded-full text-[9px] font-black uppercase"
-                                            x-text="a.level"></span>
-                                    </td>
-                                    <td class="px-6 py-4 text-center">
-                                        <span
-                                            :class="a.qty === 0 ? 'text-red-600 font-black' : a.qty <= 20 ? 'text-orange-600 font-black' : 'text-slate-700'"
-                                            x-text="a.qty + ' đv'"></span>
-                                    </td>
-                                    <td class="px-6 py-4 text-xs text-slate-500" x-text="a.alertDate || '—'"></td>
-                                    <td class="px-6 py-4">
-                                        <span x-show="a.handling" :class="{
-                                            'bg-red-100 text-red-700': a.handling === 'Tiêu hủy',
-                                            'bg-orange-100 text-orange-700': a.handling === 'Vận chuyển hỏa tốc',
-                                            'bg-blue-100 text-blue-700': a.handling === 'Vận chuyển nhanh',
-                                            'bg-green-100 text-green-700': a.handling === 'Rời kho',
-                                            'bg-purple-100 text-purple-700': a.handling === 'Kiểm kê lại',
-                                            'bg-yellow-100 text-yellow-700': a.handling === 'Đặt hàng bổ sung',
-                                            'bg-slate-100 text-slate-600': a.handling === 'Giảm giá thanh lý',
-                                            'bg-teal-100 text-teal-700': a.handling === 'Chuyển kho',
-                                        }" class="px-2 py-1 rounded-lg text-[9px] font-black uppercase"
-                                            x-text="a.handling"></span>
-                                        <span x-show="!a.handling" class="text-slate-300 text-xs">—</span>
-                                    </td>
-                                    <td class="px-6 py-4">
-                                        <div class="flex items-center gap-2">
-                                            <button
-                                                class="bg-red-600 text-white px-4 py-1.5 rounded-lg text-[9px] font-black uppercase shadow-md hover:scale-105 transition">Xử
-                                                lý</button>
-                                            <button @click="confirmDelete('alerts', a.name, 'Cảnh báo: ' + a.name)"
-                                                class="text-red-400 hover:text-red-600 transition p-1.5 rounded-lg hover:bg-red-50"
-                                                title="Xóa cảnh báo"><i class="fas fa-trash-alt text-xs"></i></button>
+
+                <!-- Alert Cards Grid -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <template x-for="a in filteredAlerts()" :key="a.id">
+                        <div class="alert-card group" :class="{
+                            'critical': a.level === 'Khẩn cấp',
+                            'warning': a.level === 'Cao' || a.level === 'Trung bình',
+                            'info': a.level === 'Thấp' || !a.level
+                        }">
+                            <div class="alert-card-header">
+                                <div class="alert-level-badge" x-text="a.level || 'Thông tin'"></div>
+                                <span class="alert-time flex items-center gap-1">
+                                    <i class="far fa-clock"></i>
+                                    <span x-text="a.alertDate"></span>
+                                </span>
+                            </div>
+                            <div class="alert-card-body">
+                                <div class="flex items-start justify-between mb-2">
+                                    <h4 class="flex items-center gap-2 leading-tight">
+                                        <div class="w-8 h-8 rounded-xl flex items-center justify-center bg-slate-100 group-hover:bg-white transition-colors">
+                                            <i :class="a.icon || 'fas fa-bell'" :class="a.level === 'Khẩn cấp' ? 'text-red-500' : 'text-slate-400'"></i>
                                         </div>
-                                    </td>
-                                </tr>
-                            </template>
-                            <template x-if="alerts.length === 0">
-                                <tr>
-                                    <td colspan="7">
-                                        <div class="empty-state">
-                                            <div class="empty-state-icon bg-green-50"><i
-                                                    class="fas fa-shield-halved text-green-400"></i></div>
-                                            <p class="empty-state-title">Không có cảnh báo nào</p>
-                                            <p class="empty-state-sub">Hệ thống hoạt động bình thường. Không có cảnh báo
-                                                tồn kho nào cần xử lý.</p>
-                                        </div>
-                                    </td>
-                                </tr>
-                            </template>
-                        </tbody>
-                    </table>
+                                        <span x-text="a.name"></span>
+                                    </h4>
+                                    <span class="text-[10px] font-black text-slate-300 group-hover:text-slate-400 transition" x-text="a.type"></span>
+                                </div>
+                                <p class="line-clamp-2 min-h-[3em] text-[13px] font-bold text-slate-500" x-text="a.note"></p>
+                                
+                                <div x-show="a.qty > 0" class="mt-4 p-3 rounded-2xl bg-slate-50 group-hover:bg-slate-100 transition">
+                                    <div class="flex items-center justify-between mb-1.5">
+                                        <span class="text-[9px] font-black uppercase text-slate-400">Trạng thái tồn kho</span>
+                                        <span class="text-[10px] font-black text-slate-700" x-text="a.qty + ' đơn vị'"></span>
+                                    </div>
+                                    <div class="w-full bg-slate-200 rounded-full h-1.5 overflow-hidden">
+                                        <div class="h-1.5 rounded-full transition-all duration-700"
+                                            :class="a.qty <= 20 ? 'bg-red-500' : 'bg-yellow-500'"
+                                            :style="'width:' + Math.min((a.qty / 500) * 100, 100) + '%'"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="alert-card-footer">
+                                <div class="flex items-center gap-2">
+                                    <i class="fas fa-hand-holding-medical text-[10px] text-slate-400"></i>
+                                    <span class="text-[10px] font-bold text-slate-500" x-text="a.handling"></span>
+                                </div>
+                                <div class="flex items-center gap-1">
+                                    <button @click="confirmDelete('alerts', a.id, 'Cảnh báo ' + a.name)" 
+                                        class="w-8 h-8 rounded-lg flex items-center justify-center text-slate-300 hover:text-red-500 hover:bg-red-50 transition">
+                                        <i class="fas fa-trash-alt text-xs"></i>
+                                    </button>
+                                    <button class="alert-action-btn hover:shadow-sm">Xử lý</button>
+                                </div>
+                            </div>
+                        </div>
+                    </template>
                 </div>
+
+                <!-- Empty State -->
+                <template x-if="alerts.length === 0">
+                    <div class="bg-white rounded-[3rem] p-20 border shadow-sm flex flex-col items-center text-center">
+                        <div class="w-24 h-24 bg-green-50 rounded-full flex items-center justify-center mb-6">
+                            <i class="fas fa-shield-check text-4xl text-green-400"></i>
+                        </div>
+                        <h3 class="text-xl font-black text-slate-800 uppercase italic">Hệ thống an toàn</h3>
+                        <p class="text-slate-400 text-sm max-w-sm mt-2 font-bold">Không phát hiện rủi ro hoặc cảnh báo nào cần xử lý lúc này. Mọi chỉ số đều đạt ngưỡng tối ưu.</p>
+                    </div>
+                </template>
             </div>
+
 
             <!-- TAB: NHÂN SỰ -->
             <div x-show="currentTab === 'employees'" class="space-y-6" x-transition>
@@ -1476,7 +1523,6 @@
                     </div>
                 </div>
 
-                <!-- Bộ lọc thời gian -->
                 <div class="bg-white p-4 rounded-3xl border shadow-sm flex flex-wrap items-center gap-3">
                     <span class="text-[10px] font-black uppercase text-slate-400 tracking-widest mr-2">Thời gian báo cáo:</span>
                     <template x-for="p in reportPeriods">
@@ -1486,8 +1532,14 @@
                         </button>
                     </template>
                     <div class="ml-auto flex items-center gap-2">
-                        <span class="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span>
-                        <span class="text-[9px] font-black text-green-600 uppercase">Dữ liệu tài chính realtime</span>
+                        <button @click="exportAdvancedExcel()" 
+                            class="px-6 py-3 bg-emerald-50 text-emerald-600 rounded-2xl text-[10px] font-black uppercase hover:bg-emerald-600 hover:text-white transition shadow-sm flex items-center gap-2">
+                            <i class="fas fa-file-excel"></i> Advanced Excel
+                        </button>
+                        <button @click="exportSummaryReportPdf()" 
+                            class="px-6 py-3 bg-indigo-50 text-indigo-600 rounded-2xl text-[10px] font-black uppercase hover:bg-indigo-600 hover:text-white transition shadow-sm flex items-center gap-2">
+                            <i class="fas fa-file-pdf"></i> Summary PDF
+                        </button>
                     </div>
                 </div>
 
@@ -1574,6 +1626,62 @@
                                 </button>
                             </div>
                             <div class="absolute -bottom-10 -right-10 w-40 h-40 bg-indigo-600/20 rounded-full blur-3xl"></div>
+                        </div>
+
+                        <!-- ── SYSTEM MAINTENANCE & SNAPSHOTS ── -->
+                        <div class="bg-white rounded-[2.5rem] p-8 border shadow-sm space-y-6">
+                            <div class="flex items-center justify-between">
+                                <h3 class="text-sm font-black uppercase tracking-widest text-slate-800 flex items-center gap-2">
+                                    <i class="fas fa-database text-indigo-500"></i> Quản trị hệ thống
+                                </h3>
+                                <div class="flex gap-2">
+                                    <button @click="downloadBackup()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl text-[9px] font-black uppercase transition">
+                                        <i class="fas fa-download mr-1"></i> Backup (.trito)
+                                    </button>
+                                    <button @click="triggerRestore()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl text-[9px] font-black uppercase transition">
+                                        <i class="fas fa-upload mr-1"></i> Restore
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="bg-indigo-50 rounded-3xl p-6 border border-indigo-100">
+                                <div class="flex items-center justify-between mb-4">
+                                    <div>
+                                        <h4 class="text-xs font-black text-indigo-900 uppercase">Snapshot System</h4>
+                                        <p class="text-[10px] text-indigo-600 font-bold">Chụp trạng thái kho để so sánh hoặc rollback</p>
+                                    </div>
+                                    <button @click="createManualSnapshot()" class="w-10 h-10 bg-indigo-600 text-white rounded-xl flex items-center justify-center shadow-lg hover:bg-indigo-700 transition">
+                                        <i class="fas fa-camera"></i>
+                                    </button>
+                                </div>
+
+                                <div class="space-y-2 max-h-60 overflow-y-auto pr-2">
+                                    <template x-for="snap in snapshots" :key="snap.id">
+                                        <div class="bg-white p-3 rounded-2xl border border-indigo-100 flex items-center justify-between group hover:border-indigo-300 transition">
+                                            <div class="flex items-center gap-3">
+                                                <div class="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-500">
+                                                    <i class="fas" :class="snap.label.startsWith('Auto') ? 'fa-clock-rotate-left' : 'fa-user-tag'"></i>
+                                                </div>
+                                                <div>
+                                                    <p class="text-[11px] font-black text-slate-800" x-text="snap.label"></p>
+                                                    <p class="text-[9px] text-slate-400 font-bold" x-text="new Date(snap.time).toLocaleString('vi-VN')"></p>
+                                                </div>
+                                            </div>
+                                            <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition">
+                                                <button @click="rollbackToSnapshot(snap)" class="w-7 h-7 bg-orange-50 text-orange-600 rounded-lg flex items-center justify-center hover:bg-orange-600 hover:text-white transition" title="Rollback">
+                                                    <i class="fas fa-undo text-[10px]"></i>
+                                                </button>
+                                                <button @click="deleteSnapshot(snap.id)" class="w-7 h-7 bg-red-50 text-red-600 rounded-lg flex items-center justify-center hover:bg-red-600 hover:text-white transition" title="Xóa">
+                                                    <i class="fas fa-trash-alt text-[10px]"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </template>
+                                    <template x-if="snapshots.length === 0">
+                                        <p class="text-[10px] text-slate-400 text-center py-4 italic">Chưa có bản chụp trạng thái nào.</p>
+                                    </template>
+                                </div>
+                            </div>
                         </div>
 
                         <!-- Capital Allocation Donut -->
