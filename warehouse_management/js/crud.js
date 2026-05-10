@@ -17,12 +17,13 @@ function getCrudMethods() {
                 id: orderId, 
                 status: 'Chờ xử lý',
                 lotId: lotId,
+                batchId: this.fefoSuggestion ? this.fefoSuggestion.id : 'N/A', // Link to specific SKU lot
                 selectedLot: this.fefoSuggestion ? { ...this.fefoSuggestion } : null
             });
 
             this.persist();
             this.showAddOrder = false;
-            this.newOrder = { customer: '', product: '', priority: 'Thường', phone: '', address: '', sku: '', qty: 1 };
+            this.newOrder = { customer: '', product: '', priority: 'Thường', phone: '', address: '', sku: '', qty: 1, hub: 'Long Biên' };
             this.fefoSuggestion = null;
             this.resetOrderErrors();
             this.currentTab = 'orders';
@@ -61,6 +62,7 @@ function getCrudMethods() {
                     date: this.newProd.importDate || new Date().toLocaleDateString('vi-VN'),
                     pos: this.newProd.pos || existing.pos,
                     area: parseInt(this.newProd.area) || 0,
+                    hub: this.newProd.hub || 'Long Biên',
                     staff: this.currentUser?.name || 'AI Assistant'
                 });
                 this.persist();
@@ -95,6 +97,7 @@ function getCrudMethods() {
                 expiryDate: this.newProd.expiryDate || '',
                 importDate: this.newProd.importDate || new Date().toISOString().split('T')[0],
                 area: parseInt(this.newProd.area) || 0,
+                hub: this.newProd.hub || 'Long Biên',
                 // Extended fields
                 quality: parseFloat(this.newProd.quality) || 100,
                 minTemp: parseFloat(this.newProd.minTemp) || 15,
@@ -115,6 +118,7 @@ function getCrudMethods() {
                 date: this.newProd.importDate || new Date().toLocaleDateString('vi-VN'),
                 pos: this.newProd.pos || 'Chưa xếp',
                 area: parseInt(this.newProd.area) || 0,
+                hub: this.newProd.hub || 'Long Biên',
                 staff: this.currentUser?.name || 'AI Assistant'
             });
             this.persist();
@@ -128,7 +132,7 @@ function getCrudMethods() {
         _resetNewProd() {
             this.newProd = {
                 id: '', name: '', category: 'Thực phẩm', stock: 0, pos: '',
-                expiryDate: '', importDate: new Date().toISOString().split('T')[0], area: 0,
+                expiryDate: '', importDate: new Date().toISOString().split('T')[0], area: 0, hub: 'Long Biên',
                 quality: 100, minTemp: 2, maxTemp: 8, buyPrice: 0, baseSellPrice: 0,
                 warehouseZone: 'B', decayRate: 0.1
             };
@@ -166,6 +170,21 @@ function getCrudMethods() {
                 this.toast('Vui lòng kiểm tra lại các trường bắt buộc.', 'error', 'Dữ liệu không hợp lệ');
                 return;
             }
+            const qty = parseInt(this.newEx.qty) || 0;
+            // Tìm sản phẩm trong kho để trừ
+            const order = this.orders.find(o => o.id === this.newEx.orderId);
+            const lotId = order?.lotId;
+            const inventoryItem = this.inventoryList.find(p => p.id === order?.sku && (lotId ? p.batchId === lotId : true));
+            
+            if (inventoryItem) {
+                if (inventoryItem.stock < qty) {
+                    this.toast(`Số lượng trong kho (${inventoryItem.stock}) không đủ để xuất ${qty}!`, 'error', 'Lỗi xuất kho');
+                    return;
+                }
+                inventoryItem.stock -= qty;
+                inventoryItem.status = inventoryItem.stock === 0 ? 'Hết hàng' : inventoryItem.stock <= 50 ? 'Sắp hết hàng' : 'Còn hàng';
+            }
+
             this.outboundList.unshift({
                 id: 'XK-' + Math.floor(Math.random() * 10000),
                 orderId: this.newEx.orderId,
@@ -173,15 +192,46 @@ function getCrudMethods() {
                 date: this.newEx.exportDate || new Date().toLocaleDateString('vi-VN'),
                 staff: this.newEx.staff,
                 customerName: this.newEx.customerName,
-                qty: this.newEx.qty,
-                shipType: this.newEx.shipType
+                qty: qty,
+                shipType: this.newEx.shipType,
+                hub: order?.hub || 'Long Biên'
             });
+
+            if (order) order.status = 'Đã xuất kho';
+
             this.persist();
             this.showExportModal = false;
             this.newEx = { orderId: '', type: 'Bán lẻ', staff: '', exportDate: new Date().toISOString().split('T')[0], customerName: '', qty: '', shipType: 'Thường' };
             this.resetExErrors();
             this.currentTab = 'outbound';
-            this.toast('Đã tạo phiếu xuất kho thành công!', 'success');
+            this.toast('Đã xuất kho và cập nhật tồn kho thành công!', 'success');
+        },
+
+        // ── XỬ LÝ ĐƠN HÀNG NHANH ──
+        quickProcessOrder(order) {
+            const lot = this.inventoryList.find(p => p.id === order.sku && p.stock >= order.qty);
+            if (!lot) {
+                this.toast('Không đủ tồn kho để xử lý nhanh đơn hàng này!', 'error');
+                return;
+            }
+            
+            lot.stock -= order.qty;
+            lot.status = lot.stock === 0 ? 'Hết hàng' : lot.stock <= 50 ? 'Sắp hết hàng' : 'Còn hàng';
+            order.status = 'Đã hoàn thành';
+            
+            this.outboundList.unshift({
+                id: 'XK-' + Math.floor(Math.random() * 10000),
+                orderId: order.id,
+                type: 'Bán lẻ',
+                date: new Date().toLocaleDateString('vi-VN'),
+                staff: this.currentUser?.name || 'Hệ thống',
+                customerName: order.customer,
+                qty: order.qty,
+                hub: order.hub || 'Long Biên'
+            });
+            
+            this.persist();
+            this.toast(`Đã xử lý đơn hàng ${order.id} và trừ kho!`, 'success');
         },
 
         // ── NHÂN SỰ ──

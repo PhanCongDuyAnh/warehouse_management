@@ -614,6 +614,44 @@ function getSimulationMethods() {
             }
 
             return risks.slice(0, 5);
+        },
+
+        // ─────────────────────────────────────────────
+        // IoT Generation Logic
+        // ─────────────────────────────────────────────
+        _simGenerateIot(silent) {
+            if (!this.iotData) this.iotData = loadIotData();
+            
+            Object.keys(this.iotData.zones).forEach(z => {
+                const config = ZONE_CONFIGS[z];
+                const zone = this.iotData.zones[z];
+                
+                // Cập nhật giá trị với biến động ngẫu nhiên
+                zone.temp += (Math.random() - 0.5) * 0.2;
+                zone.humi += (Math.random() - 0.5) * 1.0;
+                zone.vibration = Math.random() * 0.1;
+
+                // Giới hạn giá trị thực tế
+                zone.humi = Math.max(30, Math.min(95, zone.humi));
+                
+                // Cập nhật trạng thái
+                if (zone.temp > config.maxTemp || zone.temp < config.minTemp) {
+                    zone.status = 'Warning';
+                    if (!silent && Math.random() < 0.1) {
+                        this.simPushEvent(`🚨 IoT Alert: Zone ${z} nhiệt độ ${zone.temp.toFixed(1)}°C (Ngưỡng: ${config.minTemp}-${config.maxTemp})`);
+                    }
+                } else {
+                    zone.status = 'Normal';
+                }
+            });
+
+            this.iotData.lastUpdated = new Date().toISOString();
+            saveIotData(this.iotData);
+            
+            // Cập nhật UI nếu đang ở tab IoT
+            if (this.currentTab === 'iot') {
+                this.updateIotRealtime();
+            }
         }
     };
 }

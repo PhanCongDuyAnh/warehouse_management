@@ -340,3 +340,36 @@ const ZONE_CONFIGS = {
     'C': { label: 'Zone C — Điều hòa (15-22°C)', color: '#6366f1', baseTemp: 18,  minTemp: 15, maxTemp: 22, icon: 'fas fa-wind' },
     'D': { label: 'Zone D — Đông lạnh (-25 đến -15°C)', color: '#0ea5e9', baseTemp: -20, minTemp: -25, maxTemp: -15, icon: 'fas fa-icicles' },
 };
+
+// ==========================================
+// IOT DATA HELPERS
+// ==========================================
+function loadIotData() {
+    const saved = localStorage.getItem('trito_iot');
+    if (saved) return JSON.parse(saved);
+    return {
+        zones: {
+            'A': { temp: 5.2, humi: 82, co2: 380, vibration: 0.01, status: 'Normal' },
+            'B': { temp: 22.5, humi: 55, co2: 410, vibration: 0.05, status: 'Normal' },
+            'C': { temp: 18.1, humi: 60, co2: 395, vibration: 0.02, status: 'Normal' },
+            'D': { temp: -18.5, humi: 90, co2: 350, vibration: 0.01, status: 'Normal' }
+        },
+        lastUpdated: new Date().toISOString(),
+        history: []
+    };
+}
+
+function saveIotData(data) {
+    localStorage.setItem('trito_iot', JSON.stringify(data));
+}
+
+function generateIotReading(zoneKey) {
+    const config = ZONE_CONFIGS[zoneKey];
+    const noise = (Math.random() - 0.5) * 0.5;
+    return {
+        temp: config.baseTemp + noise,
+        humi: 50 + Math.random() * 20,
+        co2: 400 + Math.random() * 50,
+        vibration: Math.random() * 0.2
+    };
+}

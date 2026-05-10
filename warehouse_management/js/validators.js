@@ -32,8 +32,17 @@ function getValidatorMethods() {
                 else if (v.address.trim().length < 10) this.orderErr.address = 'Địa chỉ quá ngắn, vui lòng nhập đầy đủ.';
                 else this.orderErr.address = '';
             }
+            if (field === 'sku') {
+                if (!v.sku) this.orderErr.sku = 'Vui lòng chọn sản phẩm.';
+                else this.orderErr.sku = '';
+            }
+            if (field === 'qty') {
+                const q = parseInt(v.qty);
+                if (isNaN(q) || q <= 0) this.orderErr.qty = 'Số lượng phải lớn hơn 0.';
+                else this.orderErr.qty = '';
+            }
         },
-        resetOrderErrors() { this.orderErr = { customer: '', phone: '', address: '' }; },
+        resetOrderErrors() { this.orderErr = { customer: '', phone: '', address: '', sku: '', qty: '' }; },
 
         // ── Product validators (mở rộng với IoT fields) ──
         validateProdField(field) {
@@ -188,7 +197,7 @@ function getValidatorMethods() {
 
         // ── Full-form validation before submit ──
         _validateAllOrder() {
-            ['customer', 'phone', 'address'].forEach(f => this.validateOrderField(f));
+            ['customer', 'phone', 'address', 'sku', 'qty'].forEach(f => this.validateOrderField(f));
             return !Object.values(this.orderErr).some(e => e);
         },
         _validateAllProd() {

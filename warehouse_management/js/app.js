@@ -96,10 +96,16 @@ function warehouseApp() {
         alerts: (db.alerts || []).map(a => ({ ...a, id: a.id || ('ALRT-' + Math.random().toString(36).substr(2, 9)) })),
         employeeList: db.employeeList,
         snapshots: loadSnapshots(),
+        iotData: loadIotData(),
 
         // Form tạm
-        newOrder: { customer: '', product: '', priority: 'Thường', phone: '', address: '', sku: '', qty: 1 },
-        newProd: { id: '', name: '', category: 'Thực phẩm', stock: 0, pos: '', expiryDate: '', importDate: new Date().toISOString().split('T')[0], area: 0 },
+        newOrder: { customer: '', product: '', priority: 'Thường', phone: '', address: '', sku: '', qty: 1, hub: 'Long Biên' },
+        newProd: { 
+            id: '', name: '', category: 'Thực phẩm', stock: 0, pos: '', 
+            expiryDate: '', importDate: new Date().toISOString().split('T')[0], 
+            area: 0, hub: 'Long Biên', quality: 100, minTemp: 2, maxTemp: 8, 
+            buyPrice: 0, baseSellPrice: 0, warehouseZone: 'B', decayRate: 0.1 
+        },
 
         // ── Validation Errors ──
         orderErr: { customer: '', phone: '', address: '', sku: '', qty: '' },
@@ -115,7 +121,12 @@ function warehouseApp() {
         newPositionName: '',
         newEx: { orderId: '', type: 'Bán lẻ', staff: '', exportDate: new Date().toISOString().split('T')[0], customerName: '', qty: '', shipType: 'Thường' },
         newEmp: { name: '', position: 'Đóng gói', workTime: '08:00 - 17:00', empStatus: 'Đang làm' },
-        newShip: { trackId: '', orderId: '', type: 'Thường', originHub: 'Long Biên', vehicleType: 'Xe Van', destination: '', status: 'Khởi tạo', exportStaff: '', exportRole: 'Nhân viên xuất kho', shipStaff: '' },
+        newShip: { 
+            trackId: '', orderId: '', type: 'Thường', originHub: 'Long Biên', 
+            vehicleType: 'Xe Van', destination: '', status: 'Khởi tạo', 
+            exportStaff: '', exportRole: 'Nhân viên xuất kho', shipStaff: '', 
+            driverName: '', estimatedArrival: '' 
+        },
         newAlrt: { name: '', type: 'Sắp hết hàng', level: 'Trung bình', qty: 0, alertDate: new Date().toISOString().split('T')[0], handling: 'Đặt hàng bổ sung', note: '' },
         handlingOptions: [
             { value: 'Tiêu hủy', icon: 'fas fa-trash-alt', color: '#dc2626' },
@@ -280,6 +291,7 @@ function warehouseApp() {
         getExcelMethods(),
         getMaintenanceMethods(),
         getI18nMethods(),
+        getIotMethods(),
         alertMethods,
         smartInvMethods,
         getPdfMethods()
