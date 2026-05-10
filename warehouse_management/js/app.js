@@ -79,8 +79,8 @@ function warehouseApp() {
             activeStorm: false,
             activeTraffic: false,
         },
-        tabTitles: { home: 'Trang Chủ', orders: 'Đơn Hàng', inventory: 'Smart Inventory', inbound: 'Lịch Sử Nhập', outbound: 'Lịch Sử Xuất', shipping: 'Vận Chuyển', logistics: 'Logistics & GPS', alerts: 'Cảnh Báo', employees: 'Nhân Sự', reports: 'Tài Chính & Thống Kê' },
-        tabIcons: { home: 'fas fa-home', orders: 'fas fa-shopping-cart', inventory: 'fas fa-brain', inbound: 'fas fa-arrow-down', outbound: 'fas fa-arrow-up', shipping: 'fas fa-truck-fast', logistics: 'fas fa-map-location-dot', alerts: 'fas fa-exclamation-triangle', employees: 'fas fa-users', reports: 'fas fa-chart-line' },
+        tabTitles: { home: 'Trang Chủ', inventory: 'Command Center', inbound: 'Lịch Sử Nhập', outbound: 'Lịch Sử Xuất', shipping: 'Vận Chuyển', logistics: 'Logistics & GPS', iot: 'IoT Monitor', alerts: 'Cảnh Báo', employees: 'Nhân Sự', reports: 'Tài Chính & Thống Kê' },
+        tabIcons: { home: 'fas fa-home', inventory: 'fas fa-shield-halved', inbound: 'fas fa-arrow-down', outbound: 'fas fa-arrow-up', shipping: 'fas fa-truck-fast', logistics: 'fas fa-map-location-dot', iot: 'fas fa-microchip', alerts: 'fas fa-exclamation-triangle', employees: 'fas fa-users', reports: 'fas fa-chart-line' },
         
         // Logistics Constants
         HUB_DATA: HUB_DATA,

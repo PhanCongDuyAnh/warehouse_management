@@ -1,6 +1,19 @@
 body {
     font-family: 'Inter', sans-serif;
     scroll-behavior: smooth;
+    overflow-x: hidden;
+}
+
+/* Prevent tab content overflow */
+main {
+    min-width: 0;
+    max-width: calc(100vw - 18rem); /* sidebar is w-72 = 18rem */
+    overflow-x: clip;
+}
+
+/* Ensure all tab sections are bounded */
+main > div[x-show] {
+    min-width: 0;
 }
 
 .glass {

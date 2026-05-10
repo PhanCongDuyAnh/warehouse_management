@@ -26,7 +26,8 @@ function getCrudMethods() {
             this.newOrder = { customer: '', product: '', priority: 'Thường', phone: '', address: '', sku: '', qty: 1, hub: 'Long Biên' };
             this.fefoSuggestion = null;
             this.resetOrderErrors();
-            this.currentTab = 'orders';
+            this.currentTab = 'inventory';
+            this.smartInvTab = 'orders';
             this.toast('Đã tạo đơn hàng mới thành công!', 'success');
         },
 

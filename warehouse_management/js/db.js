@@ -287,9 +287,9 @@ const USERS_DB = [
 
 // Tab visibility per role
 const ROLE_TABS = {
-    admin: { home: 'Trang Chủ', orders: 'Đơn Hàng', inventory: '🧠 Smart Inventory', inbound: 'Lịch Sử Nhập', outbound: 'Lịch Sử Xuất', shipping: 'Vận Chuyển', logistics: '📍 Logistics & GPS', iot: 'IoT Monitor', alerts: 'Cảnh Báo', employees: 'Nhân Sự', reports: '💰 Tài Chính & Thống Kê' },
-    warehouse: { home: 'Trang Chủ', inventory: '🧠 Smart Inventory', inbound: 'Lịch Sử Nhập', outbound: 'Lịch Sử Xuất', iot: 'IoT Monitor', alerts: 'Cảnh Báo', employees: 'Nhân Sự' },
-    shipper: { home: 'Trang Chủ', shipping: 'Vận Chuyển', logistics: '📍 Logistics & GPS', inventory: '🧠 Smart Inventory', iot: 'IoT Monitor', alerts: 'Cảnh Báo' }
+    admin: { home: 'Trang Chủ', inventory: 'Command Center', inbound: 'Lịch Sử Nhập', outbound: 'Lịch Sử Xuất', shipping: 'Vận Chuyển', logistics: 'Logistics & GPS', iot: 'IoT Monitor', alerts: 'Cảnh Báo', employees: 'Nhân Sự', reports: 'Tài Chính & Thống Kê' },
+    warehouse: { home: 'Trang Chủ', inventory: 'Command Center', inbound: 'Lịch Sử Nhập', outbound: 'Lịch Sử Xuất', iot: 'IoT Monitor', alerts: 'Cảnh Báo', employees: 'Nhân Sự' },
+    shipper: { home: 'Trang Chủ', shipping: 'Vận Chuyển', logistics: 'Logistics & GPS', inventory: 'Command Center', iot: 'IoT Monitor', alerts: 'Cảnh Báo' }
 };
 
 function getSession() {
