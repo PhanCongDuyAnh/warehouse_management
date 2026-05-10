@@ -30,50 +30,54 @@ function savePositions(pos) {
 function loadIotData() {
     try {
         const raw = localStorage.getItem(DB_KEY + '_iot');
-        return raw ? JSON.parse(raw) : generateInitialIotData();
+        if (raw) {
+            const data = JSON.parse(raw);
+            // Migrate old array structure to new object structure if needed
+            if (Array.isArray(data)) {
+                return {
+                    zones: data[data.length - 1] || generateInitialIotZones(),
+                    lastUpdated: new Date().toISOString(),
+                    history: data
+                };
+            }
+            return data;
+        }
+        return generateInitialIotData();
     } catch (e) { return generateInitialIotData(); }
 }
+
 function saveIotData(data) {
     try { localStorage.setItem(DB_KEY + '_iot', JSON.stringify(data)); } catch (e) { }
 }
 
-function generateInitialIotData() {
-    const points = [];
-    const base = new Date(2026, 4, 8, 8, 0, 0);
-    for (let i = 0; i < 8; i++) {
-        const t = new Date(base.getTime() + i * 3600000);
-        points.push(generateIotReading(t.toISOString()));
-    }
-    return points;
+function generateInitialIotZones() {
+    return {
+        'A': { temp: 5.2, humi: 82, co2: 380, vibration: 0.01, status: 'Normal' },
+        'B': { temp: 22.5, humi: 55, co2: 410, vibration: 0.05, status: 'Normal' },
+        'C': { temp: 18.1, humi: 60, co2: 395, vibration: 0.02, status: 'Normal' },
+        'D': { temp: -18.5, humi: 90, co2: 350, vibration: 0.01, status: 'Normal' }
+    };
 }
 
-function generateIotReading(timeISO) {
+function generateInitialIotData() {
     return {
-        time: timeISO,
-        zoneA: { // Lạnh (2-8°C)
-            temp: +(2 + Math.random() * 6).toFixed(1),
-            humidity: +(65 + Math.random() * 15).toFixed(1),
-            co2: +(400 + Math.random() * 60).toFixed(0),
-            vibration: +(Math.random() * 0.05).toFixed(3)
-        },
-        zoneB: { // Thường (18-26°C)
-            temp: +(18 + Math.random() * 8).toFixed(1),
-            humidity: +(50 + Math.random() * 15).toFixed(1),
-            co2: +(390 + Math.random() * 80).toFixed(0),
-            vibration: +(Math.random() * 0.04).toFixed(3)
-        },
-        zoneC: { // Điều hòa (15-22°C)
-            temp: +(15 + Math.random() * 7).toFixed(1),
-            humidity: +(55 + Math.random() * 15).toFixed(1),
-            co2: +(395 + Math.random() * 50).toFixed(0),
-            vibration: +(Math.random() * 0.03).toFixed(3)
-        },
-        zoneD: { // Đông lạnh (-25 đến -15°C)
-            temp: +(-25 + Math.random() * 10).toFixed(1),
-            humidity: +(75 + Math.random() * 15).toFixed(1),
-            co2: +(370 + Math.random() * 40).toFixed(0),
-            vibration: +(Math.random() * 0.02).toFixed(3)
-        }
+        zones: generateInitialIotZones(),
+        lastUpdated: new Date().toISOString(),
+        history: []
+    };
+}
+
+function generateIotReading(zoneKey) {
+    const config = ZONE_CONFIGS[zoneKey];
+    if (!config) return { temp: 20, humi: 50, co2: 400, vibration: 0.01 };
+    
+    const noise = (Math.random() - 0.5) * 0.5;
+    return {
+        temp: config.baseTemp + noise,
+        humi: 50 + Math.random() * 20,
+        co2: 400 + Math.random() * 50,
+        vibration: Math.random() * 0.2,
+        status: 'Normal'
     };
 }
 
@@ -320,18 +324,6 @@ const VEHICLE_CONFIGS = {
 };
 
 // ==========================================
-// VEHICLE CONFIGS — Cấu hình phương tiện
-// ==========================================
-const VEHICLE_OLD_CONFIGS = {
-    'Xe máy':      { fuelPerKm: 0.04, avgSpeedKmh: 35, icon: 'fas fa-motorcycle',  co2PerKm: 0.08 },
-    'Xe tải 1.5T': { fuelPerKm: 0.12, avgSpeedKmh: 55, icon: 'fas fa-truck',       co2PerKm: 0.28 },
-    'Xe tải 5T':   { fuelPerKm: 0.22, avgSpeedKmh: 50, icon: 'fas fa-truck-moving', co2PerKm: 0.52 },
-    'Container':   { fuelPerKm: 0.38, avgSpeedKmh: 45, icon: 'fas fa-truck-front',  co2PerKm: 0.90 },
-    'Máy bay':     { fuelPerKm: 3.50, avgSpeedKmh: 800, icon: 'fas fa-plane',       co2PerKm: 8.50 },
-    'Tàu hỏa':     { fuelPerKm: 0.06, avgSpeedKmh: 120, icon: 'fas fa-train',       co2PerKm: 0.04 },
-};
-
-// ==========================================
 // WAREHOUSE ZONES CONFIG
 // ==========================================
 const ZONE_CONFIGS = {
@@ -340,36 +332,3 @@ const ZONE_CONFIGS = {
     'C': { label: 'Zone C — Điều hòa (15-22°C)', color: '#6366f1', baseTemp: 18,  minTemp: 15, maxTemp: 22, icon: 'fas fa-wind' },
     'D': { label: 'Zone D — Đông lạnh (-25 đến -15°C)', color: '#0ea5e9', baseTemp: -20, minTemp: -25, maxTemp: -15, icon: 'fas fa-icicles' },
 };
-
-// ==========================================
-// IOT DATA HELPERS
-// ==========================================
-function loadIotData() {
-    const saved = localStorage.getItem('trito_iot');
-    if (saved) return JSON.parse(saved);
-    return {
-        zones: {
-            'A': { temp: 5.2, humi: 82, co2: 380, vibration: 0.01, status: 'Normal' },
-            'B': { temp: 22.5, humi: 55, co2: 410, vibration: 0.05, status: 'Normal' },
-            'C': { temp: 18.1, humi: 60, co2: 395, vibration: 0.02, status: 'Normal' },
-            'D': { temp: -18.5, humi: 90, co2: 350, vibration: 0.01, status: 'Normal' }
-        },
-        lastUpdated: new Date().toISOString(),
-        history: []
-    };
-}
-
-function saveIotData(data) {
-    localStorage.setItem('trito_iot', JSON.stringify(data));
-}
-
-function generateIotReading(zoneKey) {
-    const config = ZONE_CONFIGS[zoneKey];
-    const noise = (Math.random() - 0.5) * 0.5;
-    return {
-        temp: config.baseTemp + noise,
-        humi: 50 + Math.random() * 20,
-        co2: 400 + Math.random() * 50,
-        vibration: Math.random() * 0.2
-    };
-}

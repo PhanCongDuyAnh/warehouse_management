@@ -58,40 +58,49 @@ function getChartMethods() {
             }
 
             if (tab === 'reports') {
-                // --- Cập nhật KPI với dao động ---
-                const period = this.reportPeriod;
-                const baseRev = period === 'Ngày' ? 850 : period === 'Tuần' ? 5200 : period === 'Tháng' ? 1280 : period === 'Quý' ? 3900 : 14200;
-                const revM = this.rnd(baseRev, 0.12);
-                const profM = this.rnd(revM * 0.32, 0.15);
-                const up1 = Math.random() > 0.35;
-                const up2 = Math.random() > 0.3;
-                const fmt = (v) => v >= 1000 ? (v / 1000).toFixed(1) + 'Tr đ' : v.toFixed(0) + 'K đ';
+                // --- Cập nhật KPI từ Simulation Engine ---
+                const s = this.simState;
+                const finance = this.getFinancialMetrics();
+                
+                const fmt = (v) => v >= 1e9 ? (v / 1e9).toFixed(2) + 'T đ' : v >= 1e6 ? (v / 1e6).toFixed(1) + 'Tr đ' : v.toLocaleString('vi-VN') + ' đ';
+                
                 this.statsKpi = {
-                    revenue: fmt(revM), revenueUp: up1, revenueDelta: (this.rnd(8, 0.8)).toFixed(1) + '%',
-                    profit: fmt(profM), profitUp: up2, profitDelta: (this.rnd(12, 0.9)).toFixed(1) + '%',
-                    otd: this.rnd(94, 0.04), error: this.rnd(0.24, 0.3),
-                    warehouse: this.rnd(35, 0.1)
+                    revenue: fmt(finance.revenue), 
+                    revenueUp: s.scenario === 'peak_season', 
+                    revenueDelta: (s.scenario === 'peak_season' ? '+15.4%' : '-2.1%'),
+                    profit: fmt(finance.netProfit), 
+                    profitUp: finance.netProfit > 200000000, 
+                    profitDelta: finance.riskLevel === 'High' ? '⚠️ High Risk' : 'Normal',
+                    otd: (94 * (1/s.weatherFactor)).toFixed(1), 
+                    error: (0.24 * s.trafficFactor).toFixed(2),
+                    warehouse: Math.round(this.totalWarehouseUsed())
                 };
+                
                 this.detailedKpis = [
-                    { label: 'Đơn/Ngày', sub: 'Trung bình xử lý', value: this.rnd(42, 0.15).toFixed(1), delta: this.rnd(3, 0.5).toFixed(1) + '%', up: Math.random() > 0.4, color: 'text-indigo-600', bg: 'bg-indigo-50', icon: 'fas fa-shopping-cart', iconBg: 'bg-indigo-500' },
-                    { label: 'Thời gian XL', sub: 'Phút/đơn TB', value: this.rnd(18.5, 0.12).toFixed(1) + 'p', delta: this.rnd(2, 0.6).toFixed(1) + '%', up: Math.random() > 0.5, color: 'text-amber-600', bg: 'bg-amber-50', icon: 'fas fa-clock', iconBg: 'bg-amber-500' },
-                    { label: 'Vòng quay kho', sub: 'Lần/kỳ', value: this.rnd(4.2, 0.15).toFixed(1) + 'x', delta: this.rnd(5, 0.7).toFixed(1) + '%', up: Math.random() > 0.4, color: 'text-green-600', bg: 'bg-green-50', icon: 'fas fa-boxes-stacked', iconBg: 'bg-green-500' },
-                    { label: 'Tỉ lệ lấp đầy', sub: '% diện tích kho dùng', value: this.rnd(65, 0.08).toFixed(0) + '%', delta: this.rnd(3, 0.5).toFixed(1) + '%', up: Math.random() > 0.5, color: 'text-purple-600', bg: 'bg-purple-50', icon: 'fas fa-warehouse', iconBg: 'bg-purple-500' },
-                    { label: 'NPS khách hàng', sub: 'Điểm hài lòng', value: this.rnd(87, 0.05).toFixed(0) + '/100', delta: this.rnd(4, 0.6).toFixed(1) + '%', up: Math.random() > 0.35, color: 'text-emerald-600', bg: 'bg-emerald-50', icon: 'fas fa-star', iconBg: 'bg-emerald-500' },
+                    { label: 'Đơn/Ngày', sub: 'Tốc độ đơn', value: this.rnd(42 * s.trafficFactor, 0.1).toFixed(1), delta: s.activeTraffic ? '+22%' : '0%', up: s.activeTraffic, color: 'text-indigo-600', bg: 'bg-indigo-50', icon: 'fas fa-shopping-cart', iconBg: 'bg-indigo-500' },
+                    { label: 'Năng lượng', sub: 'Chi phí điện', value: fmt(finance.electricityCost), delta: s.scenario === 'heatwave' ? '+50%' : 'Normal', up: s.scenario === 'heatwave', color: 'text-amber-600', bg: 'bg-amber-50', icon: 'fas fa-bolt', iconBg: 'bg-amber-500' },
+                    { label: 'Vòng quay', sub: 'Lần/kỳ', value: this.rnd(4.2 / s.weatherFactor, 0.1).toFixed(1) + 'x', delta: s.activeStorm ? '-35%' : 'Stable', up: !s.activeStorm, color: 'text-green-600', bg: 'bg-green-50', icon: 'fas fa-boxes-stacked', iconBg: 'bg-green-500' },
+                    { label: 'Nhiên liệu', sub: 'Lít tiêu thụ', value: s.totalFuelConsumed.toFixed(1) + 'L', delta: s.activeTraffic ? '+40%' : 'Stable', up: s.activeTraffic, color: 'text-purple-600', bg: 'bg-purple-50', icon: 'fas fa-gas-pump', iconBg: 'bg-purple-500' },
+                    { label: 'Chất lượng', sub: 'Bảo quản', value: s.qualityPct.toFixed(1) + '%', delta: s.qualityPct < 80 ? '📉 Low' : '✅ Good', up: s.qualityPct >= 80, color: 'text-emerald-600', bg: 'bg-emerald-50', icon: 'fas fa-shield-halved', iconBg: 'bg-emerald-500' },
                 ];
 
                 const labels = this.getLabels();
                 const baseArr = this.getBaseRevenue();
-                const revenueData = baseArr.map(v => this.rnd(v, 0.15));
-                const profitData = revenueData.map(v => +(v * this.rnd(0.32, 0.1)).toFixed(1));
+                
+                // Adjust data based on scenario
+                const scenMod = s.scenario === 'peak_season' ? 1.25 : s.scenario === 'storm' ? 0.75 : 1.0;
+                const revenueData = baseArr.map(v => this.rnd(v * scenMod, 0.1));
+                const profitData = revenueData.map(v => +(v * (finance.margin/100)).toFixed(1));
+                
                 const forecastLen = Math.ceil(labels.length / 3);
                 const futureLabels = labels.slice(-forecastLen).map(l => l + '*');
                 const lastRev = revenueData[revenueData.length - 1];
-                const forecastBase = Array.from({ length: forecastLen }, (_, i) => +(lastRev * (1 + 0.05 * (i + 1))).toFixed(1));
-                const forecastOpt = forecastBase.map(v => this.rnd(v * 1.15, 0.08));
-                const forecastPes = forecastBase.map(v => this.rnd(v * 0.85, 0.08));
+                
+                // Scenario-based forecasting
+                const forecastGrowth = s.scenario === 'peak_season' ? 1.15 : s.scenario === 'storm' ? 0.85 : 1.05;
+                const forecastBase = Array.from({ length: forecastLen }, (_, i) => +(lastRev * Math.pow(forecastGrowth, i + 1)).toFixed(1));
 
-                // Chart 1: Revenue main
+                // 1. Chart: Revenue Main
                 this.destroyChart('revMain');
                 const c1 = document.getElementById('revenueMainChart')?.getContext('2d');
                 if (c1) this._charts['revMain'] = new Chart(c1, {
@@ -101,116 +110,90 @@ function getChartMethods() {
                         datasets: [
                             { label: 'Doanh thu', data: [...revenueData.slice(0, -forecastLen), ...Array(forecastLen).fill(null)], backgroundColor: 'rgba(99,102,241,0.8)', borderRadius: 6, order: 2 },
                             { label: 'Lợi nhuận', data: [...profitData.slice(0, -forecastLen), ...Array(forecastLen).fill(null)], backgroundColor: 'rgba(16,185,129,0.8)', borderRadius: 6, order: 2 },
-                            { label: 'Dự báo DT', data: [...Array(labels.length - forecastLen).fill(null), ...forecastBase], type: 'line', borderColor: '#f59e0b', borderDash: [5, 5], pointStyle: 'star', pointRadius: 5, tension: 0.4, order: 1, fill: false }
+                            { label: 'Dự báo DT', data: [...Array(labels.length - forecastLen).fill(null), ...forecastBase], type: 'line', borderColor: '#f59e0b', borderDash: [5, 5], pointRadius: 5, tension: 0.4, order: 1, fill: false }
                         ]
                     },
-                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { font: { weight: 'bold' } } } }, scales: { y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.04)' } } } }
+                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { font: { weight: 'bold', size: 9 } } } }, scales: { y: { beginAtZero: true } } }
                 });
 
-                // Chart 2: Capital donut
-                this.destroyChart('capDonut');
-                const c2 = document.getElementById('capitalDonutChart')?.getContext('2d');
-                if (c2) this._charts['capDonut'] = new Chart(c2, {
+                // 2. Chart: Profit Heatmap
+                this.destroyChart('profitHeatmap');
+                const c2 = document.getElementById('profitHeatmapChart')?.getContext('2d');
+                if (c2) {
+                    const hLabels = Object.keys(finance.profitHeatmap).length ? Object.keys(finance.profitHeatmap) : ['HN', 'HCM', 'DN', 'HP'];
+                    const hData = hLabels.map(l => finance.profitHeatmap[l]?.profit || this.rnd(5000000, 0.5));
+                    this._charts['profitHeatmap'] = new Chart(c2, {
+                        type: 'bar',
+                        data: {
+                            labels: hLabels,
+                            datasets: [{
+                                label: 'Lợi nhuận (₫)',
+                                data: hData,
+                                backgroundColor: hData.map(v => v >= 0 ? 'rgba(16,185,129,0.7)' : 'rgba(239,68,68,0.7)'),
+                                borderRadius: 10
+                            }]
+                        },
+                        options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+                    });
+                }
+
+                // 3. Chart: Finance Breakdown
+                this.destroyChart('finBreakdown');
+                const c3 = document.getElementById('financeBreakdownChart')?.getContext('2d');
+                if (c3) this._charts['finBreakdown'] = new Chart(c3, {
                     type: 'doughnut',
-                    data: { labels: ['Hàng sẵn có', 'Đang về', 'Nợ NCC', 'Ký gửi'], datasets: [{ data: [this.rnd(45, 0.08), this.rnd(25, 0.1), this.rnd(15, 0.12), this.rnd(15, 0.1)], backgroundColor: ['#6366f1', '#10b981', '#f59e0b', '#94a3b8'], borderWidth: 0, hoverOffset: 10 }] },
-                    options: { responsive: true, maintainAspectRatio: false, cutout: '68%', plugins: { legend: { display: false } } }
+                    data: {
+                        labels: ['Giá vốn', 'Lương', 'Năng lượng', 'Vận chuyển', 'Tổn thất'],
+                        datasets: [{
+                            data: [finance.cogs, finance.salaryCost, finance.electricityCost, finance.fuelCost, finance.lossCost],
+                            backgroundColor: ['#6366f1', '#a855f7', '#f59e0b', '#ef4444', '#64748b'],
+                            borderWidth: 0
+                        }]
+                    },
+                    options: { responsive: true, maintainAspectRatio: false, cutout: '70%', plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 8, weight: 'bold' } } } } }
                 });
 
-                // Chart 3: Inventory Forecast với CI bands
+                // 4. Chart: Inventory Forecast
                 this.destroyChart('invForecast');
-                const c3 = document.getElementById('inventoryForecastChart')?.getContext('2d');
-                if (c3) {
+                const c4 = document.getElementById('inventoryForecastChart')?.getContext('2d');
+                if (c4) {
                     const invBase = Array.from({ length: labels.length }, (_, i) => this.rnd(200 + i * 8, 0.12));
-                    const invUpper = invBase.map(v => +(v * 1.18).toFixed(1));
-                    const invLower = invBase.map(v => +(v * 0.82).toFixed(1));
-                    this._charts['invForecast'] = new Chart(c3, {
+                    this._charts['invForecast'] = new Chart(c4, {
                         type: 'line',
-                        data: {
-                            labels,
-                            datasets: [
-                                { label: 'Giới hạn trên', data: invUpper, borderColor: 'rgba(99,102,241,0.2)', backgroundColor: 'rgba(99,102,241,0.08)', fill: '+1', tension: 0.4, pointRadius: 0, borderWidth: 1 },
-                                { label: 'Tồn kho dự báo', data: invBase, borderColor: '#6366f1', backgroundColor: 'rgba(99,102,241,0.1)', fill: false, tension: 0.4, pointRadius: 3, borderWidth: 2.5 },
-                                { label: 'Giới hạn dưới', data: invLower, borderColor: 'rgba(99,102,241,0.2)', backgroundColor: 'rgba(99,102,241,0.08)', fill: '-1', tension: 0.4, pointRadius: 0, borderWidth: 1 },
-                            ]
-                        },
-                        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { font: { weight: 'bold' } } } }, scales: { y: { beginAtZero: false, grid: { color: 'rgba(0,0,0,0.04)' } } } }
+                        data: { labels, datasets: [{ label: 'Tồn kho dự báo', data: invBase, borderColor: '#6366f1', backgroundColor: 'rgba(99,102,241,0.1)', fill: true, tension: 0.4, pointRadius: 0, borderWidth: 2 }] },
+                        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: false } } }
                     });
                 }
 
-                // Chart 4: In/Out bar
-                this.destroyChart('inOut');
-                const c4 = document.getElementById('inOutChart')?.getContext('2d');
-                if (c4) this._charts['inOut'] = new Chart(c4, {
-                    type: 'bar',
-                    data: {
-                        labels,
-                        datasets: [
-                            { label: 'Nhập kho', data: baseArr.map(v => this.rnd(v * 0.7, 0.2)), backgroundColor: 'rgba(16,185,129,0.75)', borderRadius: 5 },
-                            { label: 'Xuất kho', data: baseArr.map(v => this.rnd(v * 0.85, 0.2)), backgroundColor: 'rgba(245,158,11,0.75)', borderRadius: 5 }
-                        ]
-                    },
-                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { font: { weight: 'bold' } } } }, scales: { y: { beginAtZero: true, stacked: false, grid: { color: 'rgba(0,0,0,0.04)' } } } }
-                });
-
-                // Chart 5: Revenue Forecast 3 scenarios
-                this.destroyChart('revForecast');
-                const c5 = document.getElementById('revenueForecastChart')?.getContext('2d');
-                if (c5) {
-                    const fLabels = [...labels, ...Array.from({ length: forecastLen }, (_, i) => (labels[labels.length - 1] || '') + '+' + (i + 1))];
-                    const hist = revenueData;
-                    const optArr = [...hist, ...forecastOpt];
-                    const baseF = [...hist, ...forecastBase];
-                    const pesArr = [...hist, ...forecastPes];
-                    this._charts['revForecast'] = new Chart(c5, {
-                        type: 'line',
-                        data: {
-                            labels: fLabels,
-                            datasets: [
-                                { label: 'Lạc quan', data: optArr, borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,0.07)', fill: true, tension: 0.4, pointRadius: 2 },
-                                { label: 'Cơ sở', data: baseF, borderColor: '#6366f1', backgroundColor: 'rgba(99,102,241,0.07)', fill: true, tension: 0.4, pointRadius: 2, borderWidth: 2.5 },
-                                { label: 'Bi quan', data: pesArr, borderColor: '#ef4444', backgroundColor: 'rgba(239,68,68,0.05)', fill: true, tension: 0.4, pointRadius: 2 },
-                            ]
-                        },
-                        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { font: { weight: 'bold' } } } }, scales: { y: { beginAtZero: false, grid: { color: 'rgba(0,0,0,0.04)' } } } }
-                    });
-                }
-
-                // Chart 6: Operation Cost pie
-                this.destroyChart('opCost');
-                const c6 = document.getElementById('operationCostChart')?.getContext('2d');
-                if (c6) this._charts['opCost'] = new Chart(c6, {
-                    type: 'doughnut',
-                    data: { labels: ['Hàng hóa', 'Nhân sự', 'Vận chuyển', 'Mặt bằng'], datasets: [{ data: [this.rnd(60, 0.05), this.rnd(20, 0.08), this.rnd(15, 0.1), this.rnd(5, 0.15)], backgroundColor: ['#6366f1', '#10b981', '#f59e0b', '#ef4444'], borderWidth: 0 }] },
-                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, cutout: '55%' }
-                });
-
-                // Chart 7: Order velocity
+                // 5. Chart: Order Velocity
                 this.destroyChart('ordVel');
-                const c7 = document.getElementById('orderVelocityChart')?.getContext('2d');
-                if (c7) this._charts['ordVel'] = new Chart(c7, {
+                const c5 = document.getElementById('orderVelocityChart')?.getContext('2d');
+                if (c5) this._charts['ordVel'] = new Chart(c5, {
+                    type: 'bar',
+                    data: { labels, datasets: [{ label: 'Đơn/ngày', data: labels.map(() => this.rnd(42, 0.2)), backgroundColor: 'rgba(99,102,241,0.7)', borderRadius: 5 }] },
+                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+                });
+
+                // 6. Chart: In/Out
+                this.destroyChart('inOut');
+                const c6 = document.getElementById('inOutChart')?.getContext('2d');
+                if (c6) this._charts['inOut'] = new Chart(c6, {
                     type: 'bar',
                     data: {
                         labels,
                         datasets: [
-                            { label: 'Đơn/ngày', data: labels.map(() => this.rnd(42, 0.2)), backgroundColor: 'rgba(99,102,241,0.7)', borderRadius: 5, yAxisID: 'y' },
-                            { label: 'Thời gian XL (phút)', data: labels.map(() => this.rnd(18.5, 0.15)), type: 'line', borderColor: '#f59e0b', tension: 0.4, pointRadius: 3, borderWidth: 2, yAxisID: 'y1', fill: false }
+                            { label: 'Nhập', data: baseArr.map(v => this.rnd(v * 0.7, 0.2)), backgroundColor: 'rgba(16,185,129,0.75)', borderRadius: 5 },
+                            { label: 'Xuất', data: baseArr.map(v => this.rnd(v * 0.85, 0.2)), backgroundColor: 'rgba(245,158,11,0.75)', borderRadius: 5 }
                         ]
                     },
-                    options: {
-                        responsive: true, maintainAspectRatio: false,
-                        plugins: { legend: { position: 'bottom', labels: { font: { weight: 'bold' } } } },
-                        scales: {
-                            y: { beginAtZero: true, position: 'left', grid: { color: 'rgba(0,0,0,0.04)' } },
-                            y1: { beginAtZero: true, position: 'right', grid: { drawOnChartArea: false } }
-                        }
-                    }
+                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 9, weight: 'bold' } } } } }
                 });
 
-                // Auto-refresh mỗi 8 giây khi ở tab reports
+                // Auto-refresh logic
                 clearInterval(this._reportInterval);
                 this._reportInterval = setInterval(() => {
                     if (this.currentTab === 'reports') this.refreshReports();
-                }, 8000);
+                }, 10000);
             } else {
                 clearInterval(this._reportInterval);
             }

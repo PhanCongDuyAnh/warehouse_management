@@ -199,6 +199,9 @@ function getCrudMethods() {
             });
 
             if (order) order.status = 'Đã xuất kho';
+            
+            // TỰ ĐỘNG TẠO VẬN ĐƠN
+            this._autoCreateShipping(this.newEx.orderId, this.newEx.customerName, order?.hub || 'Long Biên', this.newEx.shipType);
 
             this.persist();
             this.showExportModal = false;
@@ -231,6 +234,9 @@ function getCrudMethods() {
                 hub: order.hub || 'Long Biên'
             });
             
+            // TỰ ĐỘNG TẠO VẬN ĐƠN
+            this._autoCreateShipping(order.id, order.customer, order.hub || 'Long Biên', 'Thường');
+
             this.persist();
             this.toast(`Đã xử lý đơn hàng ${order.id} và trừ kho!`, 'success');
         },
@@ -287,6 +293,44 @@ function getCrudMethods() {
             this.resetShipErrors();
             this.currentTab = 'shipping';
             this.toast('Đã tạo vận đơn mới thành công!', 'success');
+        },
+
+        _autoCreateShipping(orderId, customerName, hub, shipType) {
+            const trackId = 'LOG-' + Math.floor(Math.random() * 9000 + 1000);
+            const drivers = ['Nguyễn Văn Tài', 'Lê Minh Hùng', 'Trần Quốc Tuấn', 'Phạm Công Danh'];
+            const driver = drivers[Math.floor(Math.random() * drivers.length)];
+            
+            const vehicleType = shipType === 'Hỏa tốc' ? 'Xe máy' : (shipType === 'Giao nhanh' ? 'Xe tải 1.5T' : 'Xe Van');
+            
+            // Tính toán ETA dựa trên loại ship
+            const etaHours = shipType === 'Hỏa tốc' ? 2 : (shipType === 'Giao nhanh' ? 12 : 24);
+            const eta = new Date(this.simVirtualTime.getTime() + etaHours * 3600000);
+            
+            const newShipment = {
+                trackId: trackId,
+                orderId: orderId,
+                type: shipType,
+                originHub: hub,
+                destination: 'Khu vực ' + ['Bình Thạnh', 'Quận 1', 'Quận 7', 'Thủ Đức'][Math.floor(Math.random() * 4)],
+                vehicleType: vehicleType,
+                driverName: driver,
+                estimatedArrival: eta.toISOString().slice(0, 16),
+                status: 'Đang chuẩn bị',
+                shippingStatus: 'Chuẩn bị hàng',
+                location: hub,
+                fuelConsumed: 0,
+                distance: 0,
+                progress: 0,
+                customerName: customerName
+            };
+
+            this.shippingList.unshift(newShipment);
+            this.simPushEvent(`🚚 <b>Logistics:</b> Đã khởi tạo vận đơn <span>${trackId}</span> cho đơn hàng ${orderId}`);
+            
+            // Thông báo có nút bấm định vị nhanh
+            this.toast(`Vận đơn ${trackId} đã sẵn sàng. Click để định vị trên GPS!`, 'info', 'Vận chuyển', 5000, () => {
+                this.locateVehicle(newShipment);
+            });
         },
 
         _resetNewShip() {

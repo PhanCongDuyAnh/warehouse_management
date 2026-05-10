@@ -57,6 +57,10 @@ function getSimulationMethods() {
                 profitMargin: 0.22, totalFuelConsumed: 0,
                 fuelCost: 0, iotAlertCount: 0,
                 scenario: 'normal', // normal, heatwave, storm, peak_season
+                weatherFactor: 1.0,
+                trafficFactor: 1.0,
+                activeStorm: false,
+                activeTraffic: false,
             };
             this.simEventLog = [];
             this.iotAlertLog = [];
@@ -160,50 +164,95 @@ function getSimulationMethods() {
             this.simBroadcastUpdate();
         },
 
+        simApplyScenario(scenario) {
+            this.simState.scenario = scenario;
+            const s = this.simState;
+            
+            if (scenario === 'normal') {
+                s.weatherFactor = 1.0;
+                s.trafficFactor = 1.0;
+                s.activeStorm = false;
+                s.activeTraffic = false;
+            } else if (scenario === 'heatwave') {
+                s.weatherFactor = 1.2; // High heat affects cooling costs
+                s.trafficFactor = 1.1;
+                s.activeStorm = false;
+                s.activeTraffic = false;
+            } else if (scenario === 'storm') {
+                s.weatherFactor = 2.5; // Heavy impact on logistics
+                s.trafficFactor = 1.8;
+                s.activeStorm = true;
+                s.activeTraffic = true;
+            } else if (scenario === 'peak_season') {
+                s.weatherFactor = 1.0;
+                s.trafficFactor = 2.2; // Massive traffic
+                s.activeStorm = false;
+                s.activeTraffic = true;
+            }
+            
+            this.simPushEvent(`🎭 <b>Kịch bản mới:</b> Đã kích hoạt chế độ <span>${scenario.toUpperCase()}</span>`);
+            this.toast(`Kịch bản ${scenario} đã được áp dụng lên toàn hệ thống`, 'warning', 'Simulation Sync');
+        },
+
         // ─────────────────────────────────────────────
         // IoT Generation — Sinh dữ liệu cảm biến
         // ─────────────────────────────────────────────
         _simGenerateIot(silent) {
-            const reading = generateIotReading(this.simVirtualTime.toISOString());
+            if (!this.iotData || !this.iotData.zones) this.iotData = loadIotData();
+            
+            const reading = generateIotReading('B'); // Base reading format from db.js
             const s = this.simState;
             
-            // ── Tác động của kịch bản (Scenario Impact)
+            // ── Scenario Impacts ──
             let scenarioTempMod = 0;
             if (s.scenario === 'heatwave') {
-                scenarioTempMod = 5 + Math.random() * 3; // Nắng nóng tăng 5-8°C
+                scenarioTempMod = 5 + Math.random() * 3; 
             } else if (s.scenario === 'storm') {
-                scenarioTempMod = -3 - Math.random() * 2; // Bão giảm nhiệt độ
+                scenarioTempMod = -3 - Math.random() * 2;
             }
 
-            // Thêm nhiễu tùy theo thời gian (ban đêm nhiệt độ giảm)
             const hour = this.simVirtualTime.getHours();
             const nightFactor = (hour >= 22 || hour < 6) ? -0.8 : (hour >= 10 && hour < 16) ? 0.5 : 0;
             
-            // Áp dụng nhiệt độ kịch bản vào các zone
-            reading.zoneB.temp = +(reading.zoneB.temp + nightFactor + scenarioTempMod).toFixed(1);
-            reading.zoneC.temp = +(reading.zoneC.temp + nightFactor * 0.5 + scenarioTempMod * 0.7).toFixed(1);
-            reading.zoneA.temp = +(reading.zoneA.temp + scenarioTempMod * 0.2).toFixed(1); 
-            reading.zoneD.temp = +(reading.zoneD.temp + scenarioTempMod * 0.1).toFixed(1); 
+            // Update individual zones
+            Object.keys(this.iotData.zones).forEach(z => {
+                const config = ZONE_CONFIGS[z];
+                const zone = this.iotData.zones[z];
+                
+                let mod = scenarioTempMod;
+                if (z === 'A') mod *= 0.2;
+                else if (z === 'D') mod *= 0.1;
+                else if (z === 'C') mod *= 0.7;
 
-            this.iotData.push(reading);
-            if (this.iotData.length > 48) this.iotData.shift(); // circular buffer
+                zone.temp = +(config.baseTemp + nightFactor + mod + (Math.random() - 0.5) * 0.5).toFixed(1);
+                zone.humi = +(60 + (Math.random() - 0.5) * 20).toFixed(1);
+                zone.vibration = +(Math.random() * 0.05).toFixed(3);
 
-            // Kiểm tra IoT alerts
-            const alerts = this._checkIotAlerts(reading);
-            alerts.forEach(alert => {
-                this.iotAlertLog.unshift({ time: this.simClockDisplay(), ...alert });
-                this.simState.iotAlertCount = (this.simState.iotAlertCount || 0) + 1;
-                if (!silent) {
-                    this.simPushEvent(`🌡️ IoT ${alert.zone}: <span>${alert.message}</span>`);
+                // Status check
+                if (zone.temp > config.maxTemp || zone.temp < config.minTemp) {
+                    zone.status = 'Warning';
+                    if (!silent && Math.random() < 0.05) {
+                        this.simPushEvent(`🚨 IoT Alert: Zone ${z} nhiệt độ ${zone.temp.toFixed(1)}°C (Ngưỡng: ${config.minTemp}-${config.maxTemp})`);
+                    }
+                } else {
+                    zone.status = 'Normal';
                 }
             });
-            if (this.iotAlertLog.length > 30) this.iotAlertLog = this.iotAlertLog.slice(0, 30);
+
+            this.iotData.lastUpdated = this.simVirtualTime.toISOString();
+            
+            // History for charts
+            if (!this.iotData.history) this.iotData.history = [];
+            this.iotData.history.push({
+                time: this.iotData.lastUpdated,
+                zones: JSON.parse(JSON.stringify(this.iotData.zones))
+            });
+            if (this.iotData.history.length > 48) this.iotData.history.shift();
 
             saveIotData(this.iotData);
 
-            // Update IoT chart nếu đang xem tab iot
             if (this.currentTab === 'iot') {
-                this.$nextTick(() => this.updateIotCharts());
+                this.$nextTick(() => this.updateIotRealtime());
             }
         },
 
@@ -616,42 +665,5 @@ function getSimulationMethods() {
             return risks.slice(0, 5);
         },
 
-        // ─────────────────────────────────────────────
-        // IoT Generation Logic
-        // ─────────────────────────────────────────────
-        _simGenerateIot(silent) {
-            if (!this.iotData) this.iotData = loadIotData();
-            
-            Object.keys(this.iotData.zones).forEach(z => {
-                const config = ZONE_CONFIGS[z];
-                const zone = this.iotData.zones[z];
-                
-                // Cập nhật giá trị với biến động ngẫu nhiên
-                zone.temp += (Math.random() - 0.5) * 0.2;
-                zone.humi += (Math.random() - 0.5) * 1.0;
-                zone.vibration = Math.random() * 0.1;
-
-                // Giới hạn giá trị thực tế
-                zone.humi = Math.max(30, Math.min(95, zone.humi));
-                
-                // Cập nhật trạng thái
-                if (zone.temp > config.maxTemp || zone.temp < config.minTemp) {
-                    zone.status = 'Warning';
-                    if (!silent && Math.random() < 0.1) {
-                        this.simPushEvent(`🚨 IoT Alert: Zone ${z} nhiệt độ ${zone.temp.toFixed(1)}°C (Ngưỡng: ${config.minTemp}-${config.maxTemp})`);
-                    }
-                } else {
-                    zone.status = 'Normal';
-                }
-            });
-
-            this.iotData.lastUpdated = new Date().toISOString();
-            saveIotData(this.iotData);
-            
-            // Cập nhật UI nếu đang ở tab IoT
-            if (this.currentTab === 'iot') {
-                this.updateIotRealtime();
-            }
-        }
     };
 }
