@@ -9,10 +9,21 @@ function getCrudMethods() {
                 this.toast('Vui lòng kiểm tra lại các trường bắt buộc.', 'error', 'Dữ liệu không hợp lệ');
                 return;
             }
-            this.orders.unshift({ ...this.newOrder, id: 'ORD-' + Math.floor(Math.random() * 9000 + 1000), status: 'Chờ xử lý' });
+            const orderId = 'ORD-' + Math.floor(Math.random() * 9000 + 1000);
+            const lotId = this.fefoSuggestion ? this.fefoSuggestion.batchId : 'N/A';
+            
+            this.orders.unshift({ 
+                ...this.newOrder, 
+                id: orderId, 
+                status: 'Chờ xử lý',
+                lotId: lotId,
+                selectedLot: this.fefoSuggestion ? { ...this.fefoSuggestion } : null
+            });
+
             this.persist();
             this.showAddOrder = false;
             this.newOrder = { customer: '', product: '', priority: 'Thường', phone: '', address: '', sku: '', qty: 1 };
+            this.fefoSuggestion = null;
             this.resetOrderErrors();
             this.currentTab = 'orders';
             this.toast('Đã tạo đơn hàng mới thành công!', 'success');
@@ -420,7 +431,33 @@ function getCrudMethods() {
         },
 
         onOrderSkuChange() {
-            // SKU selected — stock preview is handled via x-text bindings in HTML
+            const sku = this.newOrder.sku;
+            if (!sku) {
+                this.fefoSuggestion = null;
+                return;
+            }
+
+            // Tìm tất cả các lô của SKU này
+            const lots = this.inventoryList.filter(p => p.id === sku && p.stock > 0);
+            
+            if (lots.length === 0) {
+                this.fefoSuggestion = null;
+                return;
+            }
+
+            // Sắp xếp theo HSD (FEFO)
+            lots.sort((a, b) => {
+                if (!a.expiryDate && !b.expiryDate) return 0;
+                if (!a.expiryDate) return 1;
+                if (!b.expiryDate) return -1;
+                return new Date(a.expiryDate) - new Date(b.expiryDate);
+            });
+
+            this.fefoSuggestion = lots[0];
+            
+            // Tự động điền tên sản phẩm nếu có
+            const prod = this.inventoryList.find(p => p.id === sku);
+            if (prod) this.newOrder.product = prod.name;
         },
     };
 }

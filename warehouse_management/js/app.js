@@ -37,6 +37,9 @@ function warehouseApp() {
         smartInvSearch: '',
         showDiscountModal: false,
         discountTarget: null,
+        fefoSuggestion: null,
+        showShipDetail: false,
+        selectedShipItem: null,
 
         // Chatbot
         userInput: '', isTyping: false, showSuggestions: true,
@@ -246,6 +249,7 @@ function warehouseApp() {
         getChartMethods(),
         getChatbotMethods(),
         getUiMethods(),
-        smartInvMethods
+        smartInvMethods,
+        getPdfMethods()
     );
 }

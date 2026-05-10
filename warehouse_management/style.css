@@ -1202,4 +1202,42 @@ body.sim-active .chat-container {
 .smart-inv-header-badge {
     animation: aiGlow 2.5s infinite;
 }
-
+
+/* ==========================================
+   ORDERS & SHIPPING UPGRADE STYLES
+   ========================================== */
+
+/* FEFO Suggestion Panel in Modal */
+.fefo-suggest-panel {
+    animation: slideInDown 0.3s ease-out;
+}
+
+@keyframes slideInDown {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Shipping Cards */
+.shipping-card {
+    border-left: 6px solid #6366f1; /* Default Indigo */
+}
+
+.shipping-card.border-green-200 {
+    border-left-color: #10b981; /* Green for Delivered */
+}
+
+.shipping-card:hover {
+    transform: translateY(-4px);
+}
+
+/* Timeline Pulse Effect */
+.shipping-card .bg-indigo-500 {
+    animation: pulse-indigo 2s infinite;
+}
+
+@keyframes pulse-indigo {
+    0% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.7); }
+    70% { box-shadow: 0 0 0 10px rgba(99, 102, 241, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0); }
+}
+
