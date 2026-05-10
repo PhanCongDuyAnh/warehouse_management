@@ -18,6 +18,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 </head>
 
 <body class="bg-slate-50 text-slate-800" x-data="warehouseApp()" x-init="init()">
@@ -1096,6 +1098,135 @@
                 </div>
             </div>
 
+            <!-- TAB: LOGISTICS & GPS TRACKING -->
+            <div x-show="currentTab === 'logistics'" class="space-y-6" x-transition x-init="$nextTick(() => initLogisticsMap())">
+                <div class="grid grid-cols-1 xl:grid-cols-4 gap-6 h-[700px]">
+                    <!-- Map Sidebar / Controls -->
+                    <div class="space-y-6 overflow-y-auto pr-2 no-scrollbar">
+                        <!-- Simulation Controls -->
+                        <div class="bg-white rounded-[2rem] p-6 shadow-sm border">
+                            <h4 class="text-[10px] font-black uppercase text-slate-400 mb-4 tracking-widest">Mô phỏng điều kiện</h4>
+                            <div class="space-y-3">
+                                <button @click="simState.activeStorm = !simState.activeStorm; simState.weatherFactor = simState.activeStorm ? 1.8 : 1.0"
+                                    :class="simState.activeStorm ? 'bg-red-500 text-white shadow-red-200' : 'bg-slate-100 text-slate-600'"
+                                    class="w-full flex items-center justify-between p-4 rounded-2xl transition-all shadow-lg group">
+                                    <div class="flex items-center gap-3">
+                                        <i class="fas fa-cloud-showers-heavy text-lg" :class="simState.activeStorm ? 'animate-bounce' : ''"></i>
+                                        <div class="text-left">
+                                            <p class="text-[10px] font-black uppercase leading-none">Bão lũ / Thiên tai</p>
+                                            <p class="text-[8px] font-bold opacity-60">Tốc độ -50% | Phí +80%</p>
+                                        </div>
+                                    </div>
+                                    <div class="w-2 h-2 rounded-full" :class="simState.activeStorm ? 'bg-white animate-pulse' : 'bg-slate-300'"></div>
+                                </button>
+
+                                <button @click="simState.activeTraffic = !simState.activeTraffic; simState.trafficFactor = simState.activeTraffic ? 2.2 : 1.0"
+                                    :class="simState.activeTraffic ? 'bg-orange-500 text-white shadow-orange-200' : 'bg-slate-100 text-slate-600'"
+                                    class="w-full flex items-center justify-between p-4 rounded-2xl transition-all shadow-lg group">
+                                    <div class="flex items-center gap-3">
+                                        <i class="fas fa-car-burst text-lg" :class="simState.activeTraffic ? 'animate-shake' : ''"></i>
+                                        <div class="text-left">
+                                            <p class="text-[10px] font-black uppercase leading-none">Tắc đường / Tai nạn</p>
+                                            <p class="text-[8px] font-bold opacity-60">Tốc độ -70% | Xăng +40%</p>
+                                        </div>
+                                    </div>
+                                    <div class="w-2 h-2 rounded-full" :class="simState.activeTraffic ? 'bg-white animate-pulse' : 'bg-slate-300'"></div>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Vehicle Telemetry List -->
+                        <div class="bg-white rounded-[2rem] p-6 shadow-sm border flex-1">
+                            <h4 class="text-[10px] font-black uppercase text-slate-400 mb-4 tracking-widest">Đang di chuyển (<span x-text="shippingList.filter(s => s.status !== 'Đã giao').length"></span>)</h4>
+                            <div class="space-y-4">
+                                <template x-for="s in shippingList.filter(s => s.status !== 'Đã giao')" :key="s.trackId">
+                                    <div class="p-4 rounded-2xl bg-slate-50 border border-slate-100 hover:border-indigo-300 transition cursor-pointer"
+                                        @click="focusVehicle(s)">
+                                        <div class="flex items-center justify-between mb-2">
+                                            <div class="flex items-center gap-2">
+                                                <i :class="VEHICLE_CONFIGS[s.vehicleType]?.icon || 'fas fa-truck'" class="text-indigo-600 text-xs"></i>
+                                                <span class="text-[10px] font-black" x-text="s.trackId"></span>
+                                            </div>
+                                            <span class="text-[8px] font-black uppercase px-2 py-0.5 rounded bg-indigo-100 text-indigo-600" x-text="s.vehicleType"></span>
+                                        </div>
+                                        <div class="grid grid-cols-2 gap-2">
+                                            <div class="text-[9px]">
+                                                <p class="text-slate-400 font-bold">Vận tốc</p>
+                                                <p class="font-black text-slate-800" x-text="Math.round((VEHICLE_CONFIGS[s.vehicleType]?.avgSpeedKmh || 40) / (simState.weatherFactor * simState.trafficFactor)) + ' km/h'"></p>
+                                            </div>
+                                            <div class="text-[9px]">
+                                                <p class="text-slate-400 font-bold">Xăng tiêu thụ</p>
+                                                <p class="font-black text-orange-600" x-text="(s.fuelConsumed || 0).toFixed(1) + ' L'"></p>
+                                            </div>
+                                        </div>
+                                        <!-- Mini progress -->
+                                        <div class="mt-2 w-full h-1 bg-slate-200 rounded-full overflow-hidden">
+                                            <div class="h-full bg-indigo-500 transition-all duration-500" :style="'width:' + (s.progress || 0) + '%'"></div>
+                                        </div>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Map Area -->
+                    <div class="xl:col-span-3 relative bg-white rounded-[2.5rem] shadow-sm border overflow-hidden">
+                        <div id="logistics-map" class="w-full h-full z-10"></div>
+                        
+                        <!-- Map Overlay: Legend -->
+                        <div class="absolute top-6 right-6 z-20 space-y-2">
+                            <div class="bg-white/90 backdrop-blur p-4 rounded-2xl shadow-xl border border-white/20 text-[9px] font-black uppercase">
+                                <p class="text-slate-400 mb-2 tracking-widest">Hệ thống Hub HN</p>
+                                <div class="space-y-1.5">
+                                    <template x-for="(hub, name) in HUB_DATA">
+                                        <div class="flex items-center gap-2">
+                                            <div class="w-2 h-2 rounded-full" :style="'background:' + hub.color"></div>
+                                            <span x-text="hub.name"></span>
+                                        </div>
+                                    </template>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Map Overlay: Status -->
+                        <div class="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 w-3/4">
+                            <div class="bg-slate-900/80 backdrop-blur-md p-4 rounded-3xl shadow-2xl border border-white/10 flex items-center justify-between text-white">
+                                <div class="flex items-center gap-4 px-4 border-r border-white/10">
+                                    <div class="text-center">
+                                        <p class="text-[8px] font-black text-indigo-400 uppercase">Hệ Thống</p>
+                                        <p class="text-xs font-black">LOGISTICS 4.0</p>
+                                    </div>
+                                </div>
+                                <div class="flex-1 px-8 flex justify-around">
+                                    <div class="text-center">
+                                        <p class="text-[8px] font-black text-slate-400 uppercase">Xe đang chạy</p>
+                                        <p class="text-lg font-black" x-text="shippingList.filter(s => s.status !== 'Đã giao').length"></p>
+                                    </div>
+                                    <div class="text-center">
+                                        <p class="text-[8px] font-black text-slate-400 uppercase">Avg. Lead-time</p>
+                                        <p class="text-lg font-black text-green-400">45.2m</p>
+                                    </div>
+                                    <div class="text-center">
+                                        <p class="text-[8px] font-black text-slate-400 uppercase">Risk Level</p>
+                                        <p class="text-lg font-black" :class="simState.activeStorm || simState.activeTraffic ? 'text-red-400' : 'text-green-400'" 
+                                            x-text="simState.activeStorm || simState.activeTraffic ? 'HIGH' : 'LOW'"></p>
+                                    </div>
+                                </div>
+                                <div class="flex items-center gap-2 px-4 border-l border-white/10">
+                                    <i class="fas fa-satellite text-indigo-400 animate-pulse"></i>
+                                    <span class="text-[9px] font-black uppercase tracking-widest">Live GPS Signal</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+
+
+
+
+
             <!-- TAB: CẢNH BÁO -->
             <div x-show="currentTab === 'alerts'" class="space-y-6" x-transition>
                 <div class="flex justify-between items-center bg-white p-6 rounded-3xl border shadow-sm">
@@ -1248,7 +1379,7 @@
                 </div>
             </div>
 
-            <!-- TAB: BÁO CÁO & THỐNG KÊ NÂNG CAO -->
+            <!-- TAB: BÁO CÁO & THỐNG KÊ (FINANCE & STATS MERGED) -->
             <div x-show="currentTab === 'reports'" class="space-y-6" x-transition x-cloak>
 
                 <!-- ── SIM ENGINE STATUS PANEL ── -->
@@ -1330,10 +1461,24 @@
                     </div>
                 </div>
 
+                <!-- ── FINANCIAL STATS GRID (INTEGRATED) ── -->
+                <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
+                    <template x-for="(val, label) in getFinancialMetrics()" :key="label">
+                        <div x-show="label !== 'margin'" class="bg-white p-5 rounded-3xl border shadow-sm group hover:shadow-md transition">
+                            <p class="text-[9px] font-black uppercase text-slate-400 mb-1" x-text="label"></p>
+                            <p class="text-sm font-black" :class="label === 'netProfit' ? (val >= 0 ? 'text-green-600' : 'text-red-600') : 'text-slate-800'"
+                                x-text="val.toLocaleString() + ' ₫'"></p>
+                        </div>
+                    </template>
+                    <div class="bg-indigo-600 p-5 rounded-3xl shadow-xl shadow-indigo-100 flex flex-col justify-center">
+                        <p class="text-[9px] font-black uppercase text-indigo-200 mb-1">Margin</p>
+                        <p class="text-xl font-black text-white" x-text="getFinancialMetrics().margin + '%'"></p>
+                    </div>
+                </div>
+
                 <!-- Bộ lọc thời gian -->
                 <div class="bg-white p-4 rounded-3xl border shadow-sm flex flex-wrap items-center gap-3">
-                    <span class="text-[10px] font-black uppercase text-slate-400 tracking-widest mr-2">Khung thời
-                        gian:</span>
+                    <span class="text-[10px] font-black uppercase text-slate-400 tracking-widest mr-2">Thời gian báo cáo:</span>
                     <template x-for="p in reportPeriods">
                         <button @click="reportPeriod = p; refreshReports()"
                             :class="reportPeriod === p ? 'bg-indigo-600 text-white shadow-md' : 'bg-slate-100 text-slate-500 hover:bg-indigo-50'"
@@ -1342,109 +1487,111 @@
                     </template>
                     <div class="ml-auto flex items-center gap-2">
                         <span class="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span>
-                        <span class="text-[9px] font-black text-green-600 uppercase">Dữ liệu mô phỏng thời gian
-                            thực</span>
-                        <button @click="refreshReports()"
-                            class="ml-3 bg-indigo-50 text-indigo-600 px-4 py-2 rounded-xl text-[10px] font-black uppercase hover:bg-indigo-100 transition">
-                            <i class="fas fa-sync-alt mr-1"></i>Làm mới
-                        </button>
+                        <span class="text-[9px] font-black text-green-600 uppercase">Dữ liệu tài chính realtime</span>
                     </div>
                 </div>
 
-                <!-- KPI Cards với dao động ngẫu nhiên -->
-                <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
-                    <div class="bg-gradient-to-br from-indigo-500 to-indigo-700 p-5 rounded-3xl shadow-lg text-white">
-                        <p class="text-indigo-200 text-[9px] font-black uppercase tracking-widest mb-1">Doanh thu</p>
-                        <h4 class="text-xl font-black"
-                            x-text="statsKpi.revenue !== '--' ? statsKpi.revenue : simFmt(Math.round(simState.totalRevenue*(1+simTickCount/24*0.005))) + 'đ'">
-                        </h4>
-                        <div class="flex items-center gap-1 mt-2">
-                            <i :class="statsKpi.revenueUp ? 'fas fa-arrow-up text-green-300' : 'fas fa-arrow-down text-red-300'"
-                                class="text-[9px]"></i>
-                            <span class="text-[9px] font-black"
-                                :class="statsKpi.revenueUp ? 'text-green-300' : 'text-red-300'"
-                                x-text="statsKpi.revenueDelta"></span>
-                        </div>
-                    </div>
-                    <div class="bg-gradient-to-br from-green-500 to-emerald-700 p-5 rounded-3xl shadow-lg text-white">
-                        <p class="text-green-200 text-[9px] font-black uppercase tracking-widest mb-1">Lợi nhuận</p>
-                        <h4 class="text-xl font-black"
-                            x-text="simState.profit !== 0 ? simFmt(simState.profit) + 'đ' : (statsKpi.profit !== '--' ? statsKpi.profit : '--')">
-                        </h4>
-                        <div class="flex items-center gap-1 mt-2">
-                            <i :class="(simState.profit >= 0) ? 'fas fa-arrow-up text-green-200' : 'fas fa-arrow-down text-red-300'"
-                                class="text-[9px]"></i>
-                            <span class="text-[9px] font-black text-green-200">Sim realtime</span>
-                        </div>
-                    </div>
-                    <div class="bg-white p-5 rounded-3xl border shadow-sm">
-                        <p class="text-slate-400 text-[9px] font-black uppercase tracking-widest mb-1">Đúng hạn (OTD)
-                        </p>
-                        <h4 class="text-xl font-black text-indigo-600" x-text="statsKpi.otd + '%'"></h4>
-                        <div class="w-full bg-slate-100 rounded-full h-1.5 mt-2">
-                            <div class="bg-indigo-500 h-1.5 rounded-full transition-all duration-700"
-                                :style="'width:' + statsKpi.otd + '%'"></div>
-                        </div>
-                    </div>
-                    <div class="bg-white p-5 rounded-3xl border shadow-sm">
-                        <p class="text-slate-400 text-[9px] font-black uppercase tracking-widest mb-1">Tỉ lệ sai sót</p>
-                        <h4 class="text-xl font-black text-red-500" x-text="statsKpi.error + '%'"></h4>
-                        <div class="w-full bg-slate-100 rounded-full h-1.5 mt-2">
-                            <div class="bg-red-400 h-1.5 rounded-full transition-all duration-700"
-                                :style="'width:' + (statsKpi.error * 20) + '%'"></div>
-                        </div>
-                    </div>
-                    <div class="bg-white p-5 rounded-3xl border shadow-sm">
-                        <p class="text-slate-400 text-[9px] font-black uppercase tracking-widest mb-1">Kho trống</p>
-                        <h4 class="text-xl font-black text-purple-600" x-text="statsKpi.warehouse + '%'"></h4>
-                        <div class="w-full bg-slate-100 rounded-full h-1.5 mt-2">
-                            <div class="bg-purple-500 h-1.5 rounded-full transition-all duration-700"
-                                :style="'width:' + statsKpi.warehouse + '%'"></div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Hàng 1: Doanh thu + Tồn kho dự báo -->
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    <!-- Biểu đồ doanh thu chính -->
-                    <div class="lg:col-span-2 bg-white p-6 rounded-[2.5rem] shadow-sm border">
-                        <div class="flex items-center justify-between mb-4">
-                            <div>
-                                <h3 class="font-black text-sm uppercase tracking-widest text-slate-700">Doanh thu & Lợi
-                                    nhuận</h3>
-                                <p class="text-[10px] text-slate-400 font-bold mt-0.5"
-                                    x-text="'Theo ' + reportPeriod.toLowerCase() + ' — có dao động dự báo'"></p>
+                    <!-- Statistics Column -->
+                    <div class="lg:col-span-2 space-y-6">
+                        <!-- KPI Cards Row -->
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div class="bg-white p-5 rounded-3xl border shadow-sm">
+                                <p class="text-slate-400 text-[9px] font-black uppercase tracking-widest mb-1">Đúng hạn (OTD)</p>
+                                <h4 class="text-xl font-black text-indigo-600" x-text="statsKpi.otd + '%'"></h4>
+                                <div class="w-full bg-slate-100 rounded-full h-1.5 mt-2">
+                                    <div class="bg-indigo-500 h-1.5 rounded-full transition-all duration-700" :style="'width:' + statsKpi.otd + '%'"></div>
+                                </div>
                             </div>
-                            <div class="flex gap-2">
-                                <span class="flex items-center gap-1 text-[9px] font-black text-indigo-500"><span
-                                        class="w-3 h-3 rounded bg-indigo-500 inline-block"></span>Doanh thu</span>
-                                <span class="flex items-center gap-1 text-[9px] font-black text-emerald-500"><span
-                                        class="w-3 h-3 rounded bg-emerald-500 inline-block"></span>Lợi nhuận</span>
-                                <span class="flex items-center gap-1 text-[9px] font-black text-amber-400"><span
-                                        class="w-3 h-3 rounded bg-amber-400 inline-block"></span>Dự báo</span>
+                            <div class="bg-white p-5 rounded-3xl border shadow-sm">
+                                <p class="text-slate-400 text-[9px] font-black uppercase tracking-widest mb-1">Tỉ lệ sai sót</p>
+                                <h4 class="text-xl font-black text-red-500" x-text="statsKpi.error + '%'"></h4>
+                                <div class="w-full bg-slate-100 rounded-full h-1.5 mt-2">
+                                    <div class="bg-red-400 h-1.5 rounded-full transition-all duration-700" :style="'width:' + (statsKpi.error * 20) + '%'"></div>
+                                </div>
+                            </div>
+                            <div class="bg-white p-5 rounded-3xl border shadow-sm">
+                                <p class="text-slate-400 text-[9px] font-black uppercase tracking-widest mb-1">Kho trống</p>
+                                <h4 class="text-xl font-black text-purple-600" x-text="statsKpi.warehouse + '%'"></h4>
+                                <div class="w-full bg-slate-100 rounded-full h-1.5 mt-2">
+                                    <div class="bg-purple-500 h-1.5 rounded-full transition-all duration-700" :style="'width:' + statsKpi.warehouse + '%'"></div>
+                                </div>
                             </div>
                         </div>
-                        <div class="chart-container" style="height:280px"><canvas id="revenueMainChart"></canvas></div>
+
+                        <!-- Main Revenue Chart -->
+                        <div class="bg-white p-6 rounded-[2.5rem] shadow-sm border">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="font-black text-sm uppercase tracking-widest text-slate-700 text-indigo-600">Phân tích Doanh thu & Lợi nhuận</h3>
+                                <div class="flex gap-2">
+                                    <span class="flex items-center gap-1 text-[9px] font-black text-indigo-500"><span class="w-3 h-3 rounded bg-indigo-500 inline-block"></span>Doanh thu</span>
+                                    <span class="flex items-center gap-1 text-[9px] font-black text-emerald-500"><span class="w-3 h-3 rounded bg-emerald-500 inline-block"></span>Lợi nhuận</span>
+                                </div>
+                            </div>
+                            <div class="chart-container" style="height:300px"><canvas id="revenueMainChart"></canvas></div>
+                        </div>
+
+                        <!-- Financial Deep Dive Charts -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div class="bg-white p-6 rounded-[2.5rem] border shadow-sm">
+                                <h3 class="text-xs font-black uppercase tracking-widest text-slate-800 mb-4">Cost Breakdown</h3>
+                                <div class="h-56"><canvas id="chart-cost-breakdown"></canvas></div>
+                            </div>
+                            <div class="bg-white p-6 rounded-[2.5rem] border shadow-sm">
+                                <h3 class="text-xs font-black uppercase tracking-widest text-slate-800 mb-4">Rev vs Profit</h3>
+                                <div class="h-56"><canvas id="chart-rev-profit"></canvas></div>
+                            </div>
+                        </div>
                     </div>
 
-                    <!-- Gauge / Tốc độ -->
-                    <div class="bg-white p-6 rounded-[2.5rem] shadow-sm border flex flex-col">
-                        <h3 class="font-black text-sm uppercase tracking-widest text-slate-700 mb-4">Phân bổ nguồn vốn
-                        </h3>
-                        <div class="chart-container flex-1" style="height:200px"><canvas
-                                id="capitalDonutChart"></canvas></div>
-                        <div class="mt-4 space-y-2">
-                            <div class="flex justify-between text-[10px] font-black">
-                                <span class="text-indigo-600">Hàng sẵn có</span><span>45%</span>
+                    <!-- AI & Insights Column -->
+                    <div class="space-y-6">
+                        <!-- AI Insights Engine -->
+                        <div class="bg-slate-900 rounded-[2.5rem] p-8 text-white shadow-2xl relative overflow-hidden">
+                            <div class="relative z-10">
+                                <div class="flex items-center gap-3 mb-6">
+                                    <div class="w-10 h-10 bg-indigo-500/20 rounded-2xl flex items-center justify-center backdrop-blur-md">
+                                        <i class="fas fa-microchip text-indigo-400"></i>
+                                    </div>
+                                    <h3 class="text-sm font-black uppercase tracking-tighter italic">AI Insights Engine</h3>
+                                </div>
+                                <div class="space-y-4">
+                                    <template x-for="insight in getAiInsights()" :key="insight.title">
+                                        <div class="p-4 rounded-2xl border border-white/10 hover:bg-white/5 transition group cursor-pointer">
+                                            <div class="flex justify-between items-start mb-2">
+                                                <span class="text-[8px] font-black uppercase px-2 py-0.5 rounded" 
+                                                    :class="'bg-' + insight.color + '-500/20 text-' + insight.color + '-400'"
+                                                    x-text="insight.type"></span>
+                                                <span class="text-[8px] font-black text-slate-500" x-text="'Impact: ' + insight.impact"></span>
+                                            </div>
+                                            <h4 class="text-xs font-black mb-1 group-hover:text-indigo-400 transition" x-text="insight.title"></h4>
+                                            <p class="text-[10px] text-slate-400 leading-relaxed" x-text="insight.desc"></p>
+                                        </div>
+                                    </template>
+                                </div>
+                                <button class="w-full mt-6 py-4 bg-indigo-600 hover:bg-indigo-700 rounded-2xl text-[10px] font-black uppercase tracking-widest transition shadow-xl shadow-indigo-900/40">
+                                    <i class="fas fa-wand-magic-sparkles mr-2"></i> Tối ưu hóa toàn diện
+                                </button>
                             </div>
-                            <div class="flex justify-between text-[10px] font-black">
-                                <span class="text-emerald-600">Đang về</span><span>25%</span>
-                            </div>
-                            <div class="flex justify-between text-[10px] font-black">
-                                <span class="text-amber-500">Nợ NCC</span><span>15%</span>
-                            </div>
-                            <div class="flex justify-between text-[10px] font-black">
-                                <span class="text-slate-400">Ký gửi</span><span>15%</span>
+                            <div class="absolute -bottom-10 -right-10 w-40 h-40 bg-indigo-600/20 rounded-full blur-3xl"></div>
+                        </div>
+
+                        <!-- Capital Allocation Donut -->
+                        <div class="bg-white p-6 rounded-[2.5rem] shadow-sm border">
+                            <h3 class="font-black text-sm uppercase tracking-widest text-slate-700 mb-4">Cơ cấu nguồn vốn</h3>
+                            <div class="chart-container" style="height:200px"><canvas id="capitalDonutChart"></canvas></div>
+                        </div>
+
+                        <!-- Logistics Suggestion -->
+                        <div class="bg-white rounded-[2.5rem] p-8 border shadow-sm">
+                            <h3 class="text-xs font-black uppercase tracking-widest text-slate-800 mb-6">Logistics Optimization</h3>
+                            <div class="flex items-center gap-4 p-4 rounded-2xl bg-slate-50 border border-slate-100">
+                                <div class="w-12 h-12 bg-green-100 rounded-2xl flex items-center justify-center"><i class="fas fa-route text-green-600"></i></div>
+                                <div class="flex-1">
+                                    <p class="text-[10px] font-black text-slate-800">Gợi ý gom 4 đơn Hà Đông</p>
+                                    <p class="text-[8px] font-bold text-slate-400">Tiết kiệm dự kiến: 85.000 ₫</p>
+                                </div>
+                                <button class="text-green-600 hover:scale-110 transition"><i class="fas fa-circle-check text-xl"></i></button>
                             </div>
                         </div>
                     </div>
@@ -2092,6 +2239,27 @@
                             x-text="shipErr.orderId"></span></p>
                 </div>
                 <div>
+                    <label class="block text-[10px] font-black uppercase text-slate-400 mb-2">Hub Xuất Phát</label>
+                    <select x-model="newShip.originHub" class="w-full bg-slate-50 border-none rounded-2xl px-6 py-3 shadow-inner outline-none">
+                        <template x-for="(hub, name) in HUB_DATA" :key="name">
+                            <option :value="name" x-text="name"></option>
+                        </template>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-[10px] font-black uppercase text-slate-400 mb-2">Loại Phương Tiện</label>
+                    <select x-model="newShip.vehicleType" class="w-full bg-slate-50 border-none rounded-2xl px-6 py-3 shadow-inner outline-none">
+                        <template x-for="(cfg, type) in VEHICLE_CONFIGS" :key="type">
+                            <option :value="type" x-text="type"></option>
+                        </template>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-[10px] font-black uppercase text-slate-400 mb-2">Địa chỉ giao hàng</label>
+                    <input x-model="newShip.destination" type="text" placeholder="Quận/Huyện, TP.Hà Nội..."
+                        class="w-full bg-slate-50 border-none rounded-2xl px-6 py-3 shadow-inner outline-none">
+                </div>
+                <div>
                     <label class="block text-[10px] font-black uppercase text-slate-400 mb-2">Phân loại</label>
                     <select x-model="newShip.type"
                         class="w-full bg-slate-50 border-none rounded-2xl px-6 py-3 shadow-inner outline-none">
@@ -2099,11 +2267,6 @@
                         <option>Giao nhanh</option>
                         <option>Hỏa tốc</option>
                     </select>
-                </div>
-                <div>
-                    <label class="block text-[10px] font-black uppercase text-slate-400 mb-2">Vị trí hiện tại</label>
-                    <input x-model="newShip.location" type="text" placeholder="Kho tổng, Trung tâm phân loại..."
-                        class="w-full bg-slate-50 border-none rounded-2xl px-6 py-3 shadow-inner outline-none">
                 </div>
                 <div class="md:col-span-2 border-t border-slate-100 pt-2">
                     <p class="text-[10px] font-black uppercase text-slate-300 tracking-widest mb-4">Thông tin phụ trách
@@ -2368,6 +2531,8 @@
     <script src="js/pdf.js"></script>
     <!-- 9. UI: toast, filters, utility helpers -->
     <script src="js/ui.js"></script>
+    <script src="js/logistics.js"></script>
+    <script src="js/finance.js"></script>
     <!-- 10. App: main Alpine.js component (warehouseApp) -->
     <script src="js/app.js"></script>
     <!-- Toàn bộ JavaScript đã được tách ra thành các file riêng trong thư mục js/ -->

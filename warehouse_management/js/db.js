@@ -176,9 +176,9 @@ const DB_DEFAULTS = {
         { id: 'XK-002', orderId: 'ORD-8826', type: 'Bán lẻ', date: '2026-05-07', staff: 'Trần Thị Bình', customerName: 'Lê Minh Hưng', qty: 5, shipType: 'Thường' },
     ],
     shippingList: [
-        { trackId: 'LOG-001', orderId: 'ORD-8821', location: 'Kho trung chuyển HN', type: 'Hỏa tốc', status: 'Đang đi', exportStaff: 'Nguyễn Văn An', exportRole: 'Nhân viên xuất kho', shipStaff: 'Lê Tài Xế', originHub: 'Kho tổng HN', destination: 'Quận 1, TP.HCM', fuelConsumed: 12.5, distance: 85, vehicleType: 'Xe máy', estimatedArrival: '2026-05-09T14:00', shippingStatus: 'Đang vận chuyển', driverName: 'Lê Văn Tài' },
-        { trackId: 'LOG-002', orderId: 'ORD-8825', location: 'Quận 7, TP.HCM', type: 'Thường', status: 'Đang chuẩn bị', exportStaff: 'Trần Thị Bình', exportRole: 'Nhân viên xuất kho', shipStaff: 'Nguyễn Tài Xế', originHub: 'Kho tổng HN', destination: 'Quận 7, TP.HCM', fuelConsumed: 0, distance: 0, vehicleType: 'Xe tải 1.5T', estimatedArrival: '2026-05-11T10:00', shippingStatus: 'Chuẩn bị hàng', driverName: 'Nguyễn Văn Hùng' },
-        { trackId: 'LOG-003', orderId: 'ORD-8830', location: 'Kho tổng HN', type: 'Thường', status: 'Đang chuẩn bị', exportStaff: 'Admin Pro', exportRole: 'Quản lý kho', shipStaff: 'Phạm Tài Xế', originHub: 'Kho tổng HN', destination: 'Bình Thạnh, TP.HCM', fuelConsumed: 0, distance: 0, vehicleType: 'Xe tải 5T', estimatedArrival: '2026-05-12T16:00', shippingStatus: 'Khởi tạo', driverName: 'Phạm Văn Long' },
+        { trackId: 'LOG-001', orderId: 'ORD-8821', location: 'Kho trung chuyển HN', type: 'Hỏa tốc', status: 'Đang đi', exportStaff: 'Nguyễn Văn An', exportRole: 'Nhân viên xuất kho', shipStaff: 'Lê Tài Xế', originHub: 'Long Biên', destination: 'Quận 1, TP.HCM', fuelConsumed: 12.5, distance: 85, vehicleType: 'Xe Van', estimatedArrival: '2026-05-09T14:00', shippingStatus: 'Đang vận chuyển', driverName: 'Lê Văn Tài' },
+        { trackId: 'LOG-002', orderId: 'ORD-8825', location: 'Quận 7, TP.HCM', type: 'Thường', status: 'Đang chuẩn bị', exportStaff: 'Trần Thị Bình', exportRole: 'Nhân viên xuất kho', shipStaff: 'Nguyễn Tài Xế', originHub: 'Hoài Đức', destination: 'Quận 7, TP.HCM', fuelConsumed: 0, distance: 0, vehicleType: 'Xe tải 1.5T', estimatedArrival: '2026-05-11T10:00', shippingStatus: 'Chuẩn bị hàng', driverName: 'Nguyễn Văn Hùng' },
+        { trackId: 'LOG-003', orderId: 'ORD-8830', location: 'Kho tổng HN', type: 'Thường', status: 'Đang chuẩn bị', exportStaff: 'Admin Pro', exportRole: 'Quản lý kho', shipStaff: 'Phạm Tài Xế', originHub: 'Ngọc Hồi', destination: 'Bình Thạnh, TP.HCM', fuelConsumed: 0, distance: 0, vehicleType: 'Xe tải 5T', estimatedArrival: '2026-05-12T16:00', shippingStatus: 'Khởi tạo', driverName: 'Phạm Văn Long' },
     ],
     alerts: [
         { name: 'Mì gói Hảo Hảo', type: 'Sắp hết hàng', level: 'Trung bình', qty: 45, alertDate: '2026-05-01', handling: 'Đặt hàng bổ sung', note: 'Cần nhập thêm trước cuối tuần' },
@@ -253,7 +253,7 @@ const USERS_DB = [
             'view_inventory', 'edit_inventory', 'delete_inventory',
             'manage_employees', 'view_employees',
             'view_alerts', 'create_alert', 'delete_alert',
-            'view_reports', 'manage_system', 'view_iot', 'manage_snapshots']
+            'view_reports', 'manage_system', 'view_iot', 'manage_snapshots', 'view_logistics', 'view_finance']
     },
     {
         id: 2,
@@ -281,15 +281,15 @@ const USERS_DB = [
         color: '#3b82f6',
         permissions: ['view_inventory',
             'create_shipping', 'edit_shipping',
-            'view_alerts', 'view_iot']
+            'view_alerts', 'view_iot', 'view_logistics']
     }
 ];
 
 // Tab visibility per role
 const ROLE_TABS = {
-    admin: { home: 'Trang Chủ', orders: 'Đơn Hàng', inventory: '🧠 Smart Inventory', inbound: 'Lịch Sử Nhập', outbound: 'Lịch Sử Xuất', shipping: 'Vận Chuyển', iot: 'IoT Monitor', alerts: 'Cảnh Báo', employees: 'Nhân Sự', reports: 'Thống Kê' },
+    admin: { home: 'Trang Chủ', orders: 'Đơn Hàng', inventory: '🧠 Smart Inventory', inbound: 'Lịch Sử Nhập', outbound: 'Lịch Sử Xuất', shipping: 'Vận Chuyển', logistics: '📍 Logistics & GPS', iot: 'IoT Monitor', alerts: 'Cảnh Báo', employees: 'Nhân Sự', reports: '💰 Tài Chính & Thống Kê' },
     warehouse: { home: 'Trang Chủ', inventory: '🧠 Smart Inventory', inbound: 'Lịch Sử Nhập', outbound: 'Lịch Sử Xuất', iot: 'IoT Monitor', alerts: 'Cảnh Báo', employees: 'Nhân Sự' },
-    shipper: { home: 'Trang Chủ', shipping: 'Vận Chuyển', inventory: '🧠 Smart Inventory', iot: 'IoT Monitor', alerts: 'Cảnh Báo' }
+    shipper: { home: 'Trang Chủ', shipping: 'Vận Chuyển', logistics: '📍 Logistics & GPS', inventory: '🧠 Smart Inventory', iot: 'IoT Monitor', alerts: 'Cảnh Báo' }
 };
 
 function getSession() {
@@ -303,9 +303,26 @@ function clearSession() {
 }
 
 // ==========================================
+// LOGISTICS CONFIGS
+// ==========================================
+const HUB_DATA = {
+    'Long Biên': { name: 'Hub Long Biên (Main)', coords: [21.0401, 105.8913], color: '#6366f1', type: 'main' },
+    'Hoài Đức': { name: 'Hub Hoài Đức', coords: [21.0253, 105.7042], color: '#10b981', type: 'sub' },
+    'Ngọc Hồi': { name: 'Hub Ngọc Hồi', coords: [20.9324, 105.8450], color: '#f59e0b', type: 'sub' },
+    'Hà Đông': { name: 'Hub Hà Đông', coords: [20.9700, 105.7750], color: '#ef4444', type: 'sub' }
+};
+
+const VEHICLE_CONFIGS = {
+    'Xe Van':      { fuelPerKm: 0.08, avgSpeedKmh: 45, icon: 'fas fa-truck-ramp-box', co2PerKm: 0.15 },
+    'Xe tải 1.5T': { fuelPerKm: 0.12, avgSpeedKmh: 55, icon: 'fas fa-truck',       co2PerKm: 0.28 },
+    'Xe tải 2.5T đông lạnh': { fuelPerKm: 0.18, avgSpeedKmh: 48, icon: 'fas fa-snowflake', co2PerKm: 0.35 },
+    'Xe tải 5T':   { fuelPerKm: 0.25, avgSpeedKmh: 42, icon: 'fas fa-truck-moving', co2PerKm: 0.55 },
+};
+
+// ==========================================
 // VEHICLE CONFIGS — Cấu hình phương tiện
 // ==========================================
-const VEHICLE_CONFIGS = {
+const VEHICLE_OLD_CONFIGS = {
     'Xe máy':      { fuelPerKm: 0.04, avgSpeedKmh: 35, icon: 'fas fa-motorcycle',  co2PerKm: 0.08 },
     'Xe tải 1.5T': { fuelPerKm: 0.12, avgSpeedKmh: 55, icon: 'fas fa-truck',       co2PerKm: 0.28 },
     'Xe tải 5T':   { fuelPerKm: 0.22, avgSpeedKmh: 50, icon: 'fas fa-truck-moving', co2PerKm: 0.52 },

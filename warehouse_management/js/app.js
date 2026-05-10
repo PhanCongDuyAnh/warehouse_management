@@ -74,13 +74,17 @@ function warehouseApp() {
             dailyLogistics: 4200000,
             qualityDecayPerDay: 0.15,
             profitMargin: 0.22,
+            weatherFactor: 1.0, // 1.0 = normal, > 1.0 = bad
+            trafficFactor: 1.0, // 1.0 = normal, > 1.0 = busy
+            activeStorm: false,
+            activeTraffic: false,
         },
-        simEventLog: [],
-
-        orderStatuses: ['Tất cả', 'Chờ xử lý', 'Đang đóng gói', 'Đang giao', 'Đã nhận'],
-        stockStatuses: ['Tất cả', 'Còn hàng', 'Sắp hết hàng', 'Hết hàng'],
-        tabTitles: { home: 'Trang Chủ', orders: 'Đơn Hàng', inventory: 'Smart Inventory', inbound: 'Lịch Sử Nhập', outbound: 'Lịch Sử Xuất', shipping: 'Vận Chuyển', alerts: 'Cảnh Báo', employees: 'Nhân Sự', reports: 'Thống Kê' },
-        tabIcons: { home: 'fas fa-home', orders: 'fas fa-shopping-cart', inventory: 'fas fa-brain', inbound: 'fas fa-arrow-down', outbound: 'fas fa-arrow-up', shipping: 'fas fa-truck-fast', alerts: 'fas fa-exclamation-triangle', employees: 'fas fa-users', reports: 'fas fa-chart-pie' },
+        tabTitles: { home: 'Trang Chủ', orders: 'Đơn Hàng', inventory: 'Smart Inventory', inbound: 'Lịch Sử Nhập', outbound: 'Lịch Sử Xuất', shipping: 'Vận Chuyển', logistics: 'Logistics & GPS', alerts: 'Cảnh Báo', employees: 'Nhân Sự', reports: 'Tài Chính & Thống Kê' },
+        tabIcons: { home: 'fas fa-home', orders: 'fas fa-shopping-cart', inventory: 'fas fa-brain', inbound: 'fas fa-arrow-down', outbound: 'fas fa-arrow-up', shipping: 'fas fa-truck-fast', logistics: 'fas fa-map-location-dot', alerts: 'fas fa-exclamation-triangle', employees: 'fas fa-users', reports: 'fas fa-chart-line' },
+        
+        // Logistics Constants
+        HUB_DATA: HUB_DATA,
+        VEHICLE_CONFIGS: VEHICLE_CONFIGS,
 
         // ── Dữ liệu tải từ localStorage ──
         categories: loadCategories(),
@@ -110,7 +114,7 @@ function warehouseApp() {
         newPositionName: '',
         newEx: { orderId: '', type: 'Bán lẻ', staff: '', exportDate: new Date().toISOString().split('T')[0], customerName: '', qty: '', shipType: 'Thường' },
         newEmp: { name: '', position: 'Đóng gói', workTime: '08:00 - 17:00', empStatus: 'Đang làm' },
-        newShip: { trackId: '', orderId: '', location: 'Kho tổng', type: 'Thường', status: 'Khởi tạo', exportStaff: '', exportRole: 'Nhân viên xuất kho', shipStaff: '' },
+        newShip: { trackId: '', orderId: '', type: 'Thường', originHub: 'Long Biên', vehicleType: 'Xe Van', destination: '', status: 'Khởi tạo', exportStaff: '', exportRole: 'Nhân viên xuất kho', shipStaff: '' },
         newAlrt: { name: '', type: 'Sắp hết hàng', level: 'Trung bình', qty: 0, alertDate: new Date().toISOString().split('T')[0], handling: 'Đặt hàng bổ sung', note: '' },
         handlingOptions: [
             { value: 'Tiêu hủy', icon: 'fas fa-trash-alt', color: '#dc2626' },
@@ -131,7 +135,19 @@ function warehouseApp() {
             WATCHED.forEach(key => {
                 this.$watch(key, () => saveDB(this), { deep: true });
             });
-            this.$watch('currentTab', (val) => { this.$nextTick(() => this.initCharts(val)); });
+            this.$watch('currentTab', (val) => { 
+                this.$nextTick(() => {
+                    this.initCharts(val);
+                    if (val === 'logistics') {
+                        this.initLogisticsMap();
+                        // Special fix for Leaflet size in hidden containers
+                        setTimeout(() => this.initLogisticsMap(), 300);
+                    }
+                    if (val === 'reports') {
+                        this.$nextTick(() => this.initFinanceCharts());
+                    }
+                }); 
+            });
             this.initCharts('home');
             this.$watch('isLoggedIn', (val) => {
                 if (val) { document.body.classList.add('sim-active'); }
@@ -249,6 +265,8 @@ function warehouseApp() {
         getChartMethods(),
         getChatbotMethods(),
         getUiMethods(),
+        getLogisticsMethods(),
+        getFinanceMethods(),
         smartInvMethods,
         getPdfMethods()
     );

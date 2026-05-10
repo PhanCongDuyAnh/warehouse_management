@@ -127,9 +127,14 @@ function getSimulationMethods() {
 
             // ── 8. Profit calculation (với fuel cost)
             const revenueSim = s.totalRevenue * (1 + totalDays * 0.005 * (0.8 + Math.random() * 0.4));
-            const fuelCost = s.totalFuelConsumed * 25000; // 25,000 VNĐ/lít
+            
+            // Environmental Cost Impact
+            const weatherCost = s.activeStorm ? 1.8 : 1.0;
+            const trafficFuelExtra = s.activeTraffic ? 1.4 : 1.0;
+            
+            const fuelCost = s.totalFuelConsumed * 25000 * trafficFuelExtra; // 25,000 VNĐ/lít
             s.fuelCost = fuelCost;
-            const totalCosts = s.electricCost + s.logisticsCost + fuelCost + (s.damagedItems * 2500000);
+            const totalCosts = s.electricCost + (s.logisticsCost * weatherCost) + fuelCost + (s.damagedItems * 2500000);
             s.profit = Math.round(revenueSim * s.profitMargin - totalCosts);
 
             // ── 9. Auto-snapshot every 24h virtual
@@ -322,46 +327,92 @@ function getSimulationMethods() {
         // ─────────────────────────────────────────────
         _simUpdateShipping(silent) {
             const statusFlow = ['Khởi tạo', 'Chuẩn bị hàng', 'Xuất kho', 'Đang vận chuyển', 'Gần tới nơi', 'Đã giao'];
+            const sState = this.simState;
 
             this.shippingList.forEach(sh => {
                 if (sh.status === 'Đã giao') return;
 
                 const vehicleCfg = VEHICLE_CONFIGS[sh.vehicleType] || VEHICLE_CONFIGS['Xe tải 1.5T'];
-
-                // Tính distance mỗi 3 giờ tick
-                if (sh.shippingStatus === 'Đang vận chuyển' || sh.shippingStatus === 'Gần tới nơi') {
-                    const kmThisTick = vehicleCfg.avgSpeedKmh * 3 * (0.7 + Math.random() * 0.4);
-                    sh.distance = parseFloat(((sh.distance || 0) + kmThisTick).toFixed(1));
-                    const fuelThisTick = kmThisTick * vehicleCfg.fuelPerKm;
-                    sh.fuelConsumed = parseFloat(((sh.fuelConsumed || 0) + fuelThisTick).toFixed(2));
-                    this.simState.totalFuelConsumed = parseFloat((
-                        (this.simState.totalFuelConsumed || 0) + fuelThisTick
-                    ).toFixed(2));
+                
+                // 1. Initialize GPS data if missing
+                if (!sh.originCoords) {
+                    const hub = HUB_DATA[sh.originHub] || HUB_DATA['Long Biên'];
+                    sh.originHub = hub.name.replace('Hub ', '').replace(' (Main)', '');
+                    sh.originCoords = hub.coords;
+                    // Random destination in Hanoi area if not set
+                    sh.destCoords = [
+                        21.0 + (Math.random() - 0.5) * 0.2,
+                        105.8 + (Math.random() - 0.5) * 0.2
+                    ];
+                    sh.progress = 0;
+                    sh.currentCoords = [...sh.originCoords];
                 }
 
-                // Tiến status theo xác suất
+                // 2. Calculate movement
+                if (sh.shippingStatus === 'Đang vận chuyển' || sh.shippingStatus === 'Gần tới nơi') {
+                    // Impact of weather and traffic
+                    const speedFactor = 1 / (sState.weatherFactor * sState.trafficFactor);
+                    const actualSpeed = vehicleCfg.avgSpeedKmh * speedFactor;
+                    
+                    // We assume simulation tick happens every 1-3 hours virtually
+                    // Let's assume this method is called every 3 virtual hours (as per simTick logic)
+                    const virtualHoursElapsed = 3; 
+                    const kmThisTick = actualSpeed * virtualHoursElapsed;
+                    
+                    sh.distance = parseFloat(((sh.distance || 0) + kmThisTick).toFixed(1));
+                    
+                    // Fuel impact
+                    const fuelBase = kmThisTick * vehicleCfg.fuelPerKm;
+                    const fuelTrafficMod = sState.activeTraffic ? 1.4 : 1.0;
+                    const fuelThisTick = fuelBase * fuelTrafficMod;
+                    
+                    sh.fuelConsumed = parseFloat(((sh.fuelConsumed || 0) + fuelThisTick).toFixed(2));
+                    sState.totalFuelConsumed = parseFloat(((sState.totalFuelConsumed || 0) + fuelThisTick).toFixed(2));
+
+                    // Update Progress (estimated total trip 15-30km for Hanoi)
+                    const totalTripEst = 25; 
+                    sh.progress = Math.min(99, (sh.progress || 0) + (kmThisTick / totalTripEst) * 100);
+                    
+                    // Interpolate Coordinates
+                    const p = sh.progress / 100;
+                    sh.currentCoords = [
+                        sh.originCoords[0] + (sh.destCoords[0] - sh.originCoords[0]) * p,
+                        sh.originCoords[1] + (sh.destCoords[1] - sh.originCoords[1]) * p
+                    ];
+
+                    if (sh.progress > 85) sh.shippingStatus = 'Gần tới nơi';
+                }
+
+                // 3. Status Transitions
                 const r = Math.random();
                 const curIdx = statusFlow.indexOf(sh.shippingStatus);
 
-                if (curIdx === -1 || sh.shippingStatus === 'Đã giao') return;
+                if (curIdx < statusFlow.length - 1) {
+                    // Faster transition if speed is normal
+                    const transitionProb = 0.2 * (1 / (sState.weatherFactor * sState.trafficFactor));
+                    if (r < transitionProb) {
+                        sh.shippingStatus = statusFlow[curIdx + 1];
+                        sh.status = sh.shippingStatus === 'Đã giao' ? 'Đã giao' : (sh.shippingStatus === 'Đang vận chuyển' || sh.shippingStatus === 'Gần tới nơi') ? 'Đang đi' : 'Đang chuẩn bị';
+                        sh.location = this._simLocationForStatus(sh.shippingStatus, sh.destination);
 
-                if (r < 0.15 && curIdx < statusFlow.length - 1) {
-                    sh.shippingStatus = statusFlow[curIdx + 1];
-                    sh.status = sh.shippingStatus === 'Đã giao' ? 'Đã giao' : (sh.shippingStatus === 'Đang vận chuyển' || sh.shippingStatus === 'Gần tới nơi') ? 'Đang đi' : 'Đang chuẩn bị';
-                    sh.location = this._simLocationForStatus(sh.shippingStatus, sh.destination);
-
-                    if (!silent) {
-                        this.simPushEvent(`🚚 LOG-<span>${sh.trackId}</span> → ${sh.shippingStatus}`);
+                        if (sh.shippingStatus === 'Đã giao') {
+                            sh.progress = 100;
+                            sh.currentCoords = [...sh.destCoords];
+                            const ord = this.orders.find(o => o.id === sh.orderId);
+                            if (ord) ord.status = 'Đã nhận';
+                            if (!silent) this.simPushEvent(`✅ Giao hàng <span>${sh.trackId}</span> thành công!`);
+                        } else if (!silent) {
+                            this.simPushEvent(`🚚 <span>${sh.trackId}</span>: ${sh.shippingStatus}`);
+                        }
                     }
+                }
 
-                    if (sh.shippingStatus === 'Đã giao') {
-                        const ord = this.orders.find(o => o.id === sh.orderId);
-                        if (ord && ord.status !== 'Đã nhận') { ord.status = 'Đã nhận'; }
-                        if (!silent) this.simPushEvent(`✅ Vận đơn <span>${sh.trackId}</span> giao thành công`);
-                    }
-                } else if (r > 0.97 && !silent) {
-                    // Random delay event
-                    this.simPushEvent(`⏱ Chậm trễ: <span>${sh.trackId}</span> — ${this._simDelayReason()}`);
+                // 4. Incident alerts
+                if (r > 0.98 && !silent && sh.status === 'Đang đi') {
+                    const event = sState.activeStorm ? 'Ảnh hưởng bão: Xe phải dừng trú' : 
+                                  sState.activeTraffic ? 'Ùn tắc nghiêm trọng: Xe nhích từng chút' :
+                                  this._simDelayReason();
+                    this.simPushEvent(`⚠️ <span>${sh.trackId}</span>: ${event}`);
                 }
             });
         },
