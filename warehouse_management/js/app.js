@@ -33,6 +33,10 @@ function warehouseApp() {
         deleteTarget: { list: '', id: '', label: '' },
         orderFilter: 'Tất cả', inventoryFilter: 'Tất cả',
         inboundSearch: '', outboundSearch: '', shippingSearch: '',
+        smartInvTab: 'all',
+        smartInvSearch: '',
+        showDiscountModal: false,
+        discountTarget: null,
 
         // Chatbot
         userInput: '', isTyping: false, showSuggestions: true,
@@ -72,8 +76,8 @@ function warehouseApp() {
 
         orderStatuses: ['Tất cả', 'Chờ xử lý', 'Đang đóng gói', 'Đang giao', 'Đã nhận'],
         stockStatuses: ['Tất cả', 'Còn hàng', 'Sắp hết hàng', 'Hết hàng'],
-        tabTitles: { home: 'Trang Chủ', orders: 'Đơn Hàng', inventory: 'Tồn Kho', inbound: 'Lịch Sử Nhập', outbound: 'Lịch Sử Xuất', shipping: 'Vận Chuyển', alerts: 'Cảnh Báo', employees: 'Nhân Sự', reports: 'Thống Kê' },
-        tabIcons: { home: 'fas fa-home', orders: 'fas fa-shopping-cart', inventory: 'fas fa-boxes-stacked', inbound: 'fas fa-arrow-down', outbound: 'fas fa-arrow-up', shipping: 'fas fa-truck-fast', alerts: 'fas fa-exclamation-triangle', employees: 'fas fa-users', reports: 'fas fa-chart-pie' },
+        tabTitles: { home: 'Trang Chủ', orders: 'Đơn Hàng', inventory: 'Smart Inventory', inbound: 'Lịch Sử Nhập', outbound: 'Lịch Sử Xuất', shipping: 'Vận Chuyển', alerts: 'Cảnh Báo', employees: 'Nhân Sự', reports: 'Thống Kê' },
+        tabIcons: { home: 'fas fa-home', orders: 'fas fa-shopping-cart', inventory: 'fas fa-brain', inbound: 'fas fa-arrow-down', outbound: 'fas fa-arrow-up', shipping: 'fas fa-truck-fast', alerts: 'fas fa-exclamation-triangle', employees: 'fas fa-users', reports: 'fas fa-chart-pie' },
 
         // ── Dữ liệu tải từ localStorage ──
         categories: loadCategories(),
@@ -134,6 +138,104 @@ function warehouseApp() {
         },
     };
 
+    // ── Smart Inventory Methods ──
+    const smartInvMethods = {
+        daysUntilExpiry(dateStr) {
+            if (!dateStr) return Infinity;
+            const diff = new Date(dateStr) - new Date(this.simVirtualTime || new Date());
+            return Math.ceil(diff / (1000 * 60 * 60 * 24));
+        },
+        qualityColorClass(q) {
+            if (q >= 80) return 'quality-bar-green';
+            if (q >= 50) return 'quality-bar-yellow';
+            return 'quality-bar-red';
+        },
+        zoneBadgeClass(zone) {
+            if (zone === 'Frozen') return 'zone-badge-frozen';
+            if (zone === 'Chilled') return 'zone-badge-chilled';
+            return 'zone-badge-ambient';
+        },
+        zoneIcon(zone) {
+            if (zone === 'Frozen') return 'fas fa-icicles';
+            if (zone === 'Chilled') return 'fas fa-snowflake';
+            return 'fas fa-box-open';
+        },
+        expiryBadgeClass(dateStr) {
+            const d = this.daysUntilExpiry(dateStr);
+            if (d <= 7) return 'expiry-badge-critical';
+            if (d <= 14) return 'expiry-badge-warning';
+            if (d <= 30) return 'expiry-badge-caution';
+            return 'expiry-badge-ok';
+        },
+        expiryLabel(dateStr) {
+            if (!dateStr) return 'Không HSD';
+            const d = this.daysUntilExpiry(dateStr);
+            if (d < 0) return '⛔ Đã hết hạn';
+            if (d === 0) return '🔴 Hết hạn HÔM NAY';
+            if (d <= 7) return `🔴 Còn ${d} ngày`;
+            if (d <= 14) return `🟠 Còn ${d} ngày`;
+            if (d <= 30) return `🟡 Còn ${d} ngày`;
+            return `✅ Còn ${d} ngày`;
+        },
+        filteredSmartInventory() {
+            let list = [...this.inventoryList];
+            if (this.smartInvTab !== 'all') list = list.filter(p => p.storageZone === this.smartInvTab);
+            if (this.smartInvSearch.trim()) {
+                const q = this.smartInvSearch.toLowerCase();
+                list = list.filter(p => p.name.toLowerCase().includes(q) || p.id.toLowerCase().includes(q));
+            }
+            // FEFO sort: earliest expiry first (items without expiry go last)
+            list.sort((a, b) => {
+                if (!a.expiryDate && !b.expiryDate) return 0;
+                if (!a.expiryDate) return 1;
+                if (!b.expiryDate) return -1;
+                return new Date(a.expiryDate) - new Date(b.expiryDate);
+            });
+            return list;
+        },
+        fefoQueue() {
+            return this.inventoryList
+                .filter(p => p.expiryDate)
+                .sort((a, b) => new Date(a.expiryDate) - new Date(b.expiryDate))
+                .slice(0, 8);
+        },
+        aiDiscountSuggestions() {
+            return this.inventoryList.filter(p => {
+                const days = this.daysUntilExpiry(p.expiryDate);
+                return (p.expiryDate && days <= 30 && days >= 0) || p.quality < 60;
+            }).map(p => {
+                const days = this.daysUntilExpiry(p.expiryDate);
+                let pct = 0;
+                if (p.quality < 40) pct = 30;
+                else if (p.quality < 60) pct = 20;
+                else if (days <= 7) pct = 25;
+                else if (days <= 14) pct = 15;
+                else if (days <= 30) pct = 10;
+                return { ...p, suggestedDiscount: pct };
+            });
+        },
+        zoneSummary(zone) {
+            const items = this.inventoryList.filter(p => p.storageZone === zone);
+            const expiringSoon = items.filter(p => p.expiryDate && this.daysUntilExpiry(p.expiryDate) <= 30).length;
+            const avgQuality = items.length ? Math.round(items.reduce((s, p) => s + (p.quality || 0), 0) / items.length) : 0;
+            const totalStock = items.reduce((s, p) => s + (p.stock || 0), 0);
+            return { count: items.length, expiringSoon, avgQuality, totalStock };
+        },
+        applyAiDiscount(sku, pct) {
+            const item = this.inventoryList.find(p => p.id === sku);
+            if (item) {
+                item.currentSellPrice = Math.round(item.baseSellPrice * (1 - pct / 100));
+                this.showToast(`✅ Đã áp dụng giảm ${pct}% cho ${item.name}`, 'success');
+            }
+            this.showDiscountModal = false;
+            this.discountTarget = null;
+        },
+        openDiscountModal(item, pct) {
+            this.discountTarget = { ...item, suggestedDiscount: pct };
+            this.showDiscountModal = true;
+        },
+    };
+
     // ── Gộp tất cả modules ──
     return Object.assign(
         state,
@@ -143,6 +245,7 @@ function warehouseApp() {
         getCrudMethods(),
         getChartMethods(),
         getChatbotMethods(),
-        getUiMethods()
+        getUiMethods(),
+        smartInvMethods
     );
 }

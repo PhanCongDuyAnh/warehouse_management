@@ -854,4 +854,352 @@ body.sim-active .chat-container {
     font-weight: 900;
     color: #1e293b;
     letter-spacing: -0.02em;
-}
+}
+
+/* ══════════════════════════════════════════════════
+   SMART INVENTORY — Zone Badges
+══════════════════════════════════════════════════ */
+.zone-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 9px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    border: 1.5px solid transparent;
+}
+
+.zone-badge-frozen {
+    background: linear-gradient(135deg, #e0f2fe, #bae6fd);
+    color: #0369a1;
+    border-color: #7dd3fc;
+}
+
+.zone-badge-chilled {
+    background: linear-gradient(135deg, #dbeafe, #bfdbfe);
+    color: #1d4ed8;
+    border-color: #93c5fd;
+}
+
+.zone-badge-ambient {
+    background: linear-gradient(135deg, #dcfce7, #bbf7d0);
+    color: #15803d;
+    border-color: #86efac;
+}
+
+/* ══════════════════════════════════════════════════
+   SMART INVENTORY — Expiry Badges
+══════════════════════════════════════════════════ */
+.expiry-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 9px;
+    border-radius: 20px;
+    font-size: 9px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+}
+
+.expiry-badge-critical {
+    background: linear-gradient(135deg, #fee2e2, #fecaca);
+    color: #dc2626;
+    border: 1.5px solid #fca5a5;
+    animation: expBlink 1.4s infinite;
+}
+
+.expiry-badge-warning {
+    background: linear-gradient(135deg, #ffedd5, #fed7aa);
+    color: #c2410c;
+    border: 1.5px solid #fdba74;
+}
+
+.expiry-badge-caution {
+    background: linear-gradient(135deg, #fef9c3, #fef08a);
+    color: #92400e;
+    border: 1.5px solid #fde047;
+}
+
+.expiry-badge-ok {
+    background: linear-gradient(135deg, #dcfce7, #bbf7d0);
+    color: #15803d;
+    border: 1.5px solid #86efac;
+}
+
+@keyframes expBlink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
+}
+
+/* ══════════════════════════════════════════════════
+   SMART INVENTORY — Quality Progress Bar
+══════════════════════════════════════════════════ */
+.quality-bar-track {
+    width: 100%;
+    height: 8px;
+    background: #f1f5f9;
+    border-radius: 99px;
+    overflow: hidden;
+    position: relative;
+}
+
+.quality-bar-fill {
+    height: 100%;
+    border-radius: 99px;
+    transition: width 0.6s cubic-bezier(.4, 0, .2, 1);
+    position: relative;
+}
+
+.quality-bar-green .quality-bar-fill {
+    background: linear-gradient(90deg, #10b981, #34d399);
+    box-shadow: 0 0 8px rgba(16, 185, 129, 0.4);
+}
+
+.quality-bar-yellow .quality-bar-fill {
+    background: linear-gradient(90deg, #f59e0b, #fbbf24);
+    box-shadow: 0 0 8px rgba(245, 158, 11, 0.4);
+}
+
+.quality-bar-red .quality-bar-fill {
+    background: linear-gradient(90deg, #ef4444, #f87171);
+    box-shadow: 0 0 8px rgba(239, 68, 68, 0.4);
+    animation: qualityPulse 1.6s infinite;
+}
+
+@keyframes qualityPulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.65; }
+}
+
+/* ══════════════════════════════════════════════════
+   SMART INVENTORY — Zone Stats Cards
+══════════════════════════════════════════════════ */
+.zone-stat-card {
+    border-radius: 1.5rem;
+    padding: 20px;
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    cursor: pointer;
+}
+
+.zone-stat-card:hover {
+    transform: translateY(-3px);
+}
+
+.zone-stat-card.frozen {
+    background: linear-gradient(135deg, #0c4a6e, #0369a1);
+    box-shadow: 0 8px 32px rgba(3, 105, 161, 0.35);
+}
+
+.zone-stat-card.chilled {
+    background: linear-gradient(135deg, #1e3a5f, #1d4ed8);
+    box-shadow: 0 8px 32px rgba(29, 78, 216, 0.35);
+}
+
+.zone-stat-card.ambient {
+    background: linear-gradient(135deg, #064e3b, #059669);
+    box-shadow: 0 8px 32px rgba(5, 150, 105, 0.35);
+}
+
+.zone-stat-card::before {
+    content: '';
+    position: absolute;
+    top: -20px;
+    right: -20px;
+    width: 100px;
+    height: 100px;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 50%;
+}
+
+/* ══════════════════════════════════════════════════
+   SMART INVENTORY — FEFO Queue Panel
+══════════════════════════════════════════════════ */
+.fefo-panel {
+    background: linear-gradient(180deg, #0f172a 0%, #1e1b4b 100%);
+    border-radius: 1.5rem;
+    border: 1px solid rgba(99, 102, 241, 0.25);
+    overflow: hidden;
+}
+
+.fefo-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    transition: background 0.15s;
+}
+
+.fefo-item:hover {
+    background: rgba(99, 102, 241, 0.12);
+}
+
+.fefo-rank {
+    width: 22px;
+    height: 22px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 9px;
+    font-weight: 900;
+    flex-shrink: 0;
+}
+
+.fefo-rank-1 { background: linear-gradient(135deg, #ef4444, #dc2626); color: white; }
+.fefo-rank-2 { background: linear-gradient(135deg, #f97316, #ea580c); color: white; }
+.fefo-rank-3 { background: linear-gradient(135deg, #f59e0b, #d97706); color: white; }
+.fefo-rank-other { background: rgba(255, 255, 255, 0.1); color: #94a3b8; }
+
+/* ══════════════════════════════════════════════════
+   SMART INVENTORY — AI Discount Banner
+══════════════════════════════════════════════════ */
+.ai-discount-banner {
+    background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 50%, #6d28d9 100%);
+    border-radius: 1.5rem;
+    padding: 20px 24px;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 8px 32px rgba(79, 70, 229, 0.3);
+}
+
+.ai-discount-banner::before {
+    content: '🤖';
+    position: absolute;
+    right: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 48px;
+    opacity: 0.15;
+}
+
+.ai-discount-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    border-radius: 12px;
+    padding: 6px 12px;
+    font-size: 10px;
+    font-weight: 900;
+    color: white;
+    cursor: pointer;
+    transition: all 0.15s;
+    backdrop-filter: blur(4px);
+}
+
+.ai-discount-item:hover {
+    background: rgba(255, 255, 255, 0.28);
+    transform: scale(1.04);
+}
+
+.ai-discount-pct {
+    background: #fbbf24;
+    color: #1e1b4b;
+    border-radius: 8px;
+    padding: 1px 6px;
+    font-size: 9px;
+    font-weight: 900;
+}
+
+/* ══════════════════════════════════════════════════
+   SMART INVENTORY — Product Cards
+══════════════════════════════════════════════════ */
+.inv-card {
+    background: white;
+    border-radius: 1.5rem;
+    border: 1px solid #f1f5f9;
+    padding: 20px;
+    transition: all 0.2s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.inv-card:hover {
+    border-color: #c7d2fe;
+    box-shadow: 0 8px 32px rgba(99, 102, 241, 0.12);
+    transform: translateY(-2px);
+}
+
+.inv-card.fefo-priority {
+    border-left: 4px solid #ef4444;
+    background: linear-gradient(to right, #fff5f5 0%, white 15%);
+}
+
+.inv-card.fefo-priority-2 {
+    border-left: 4px solid #f97316;
+    background: linear-gradient(to right, #fff7ed 0%, white 15%);
+}
+
+.inv-card.fefo-priority-3 {
+    border-left: 4px solid #f59e0b;
+    background: linear-gradient(to right, #fffbeb 0%, white 15%);
+}
+
+/* Zone filter tab pills */
+.zone-tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 18px;
+    border-radius: 12px;
+    font-size: 10px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+    border: 1.5px solid transparent;
+    transition: all 0.15s;
+    white-space: nowrap;
+}
+
+.zone-tab.active-frozen {
+    background: linear-gradient(135deg, #e0f2fe, #bae6fd);
+    color: #0369a1;
+    border-color: #7dd3fc;
+    box-shadow: 0 4px 12px rgba(3, 105, 161, 0.2);
+}
+
+.zone-tab.active-chilled {
+    background: linear-gradient(135deg, #dbeafe, #bfdbfe);
+    color: #1d4ed8;
+    border-color: #93c5fd;
+    box-shadow: 0 4px 12px rgba(29, 78, 216, 0.2);
+}
+
+.zone-tab.active-ambient {
+    background: linear-gradient(135deg, #dcfce7, #bbf7d0);
+    color: #15803d;
+    border-color: #86efac;
+    box-shadow: 0 4px 12px rgba(21, 128, 61, 0.2);
+}
+
+.zone-tab.active-all {
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    color: white;
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.35);
+}
+
+.zone-tab:not([class*="active"]):hover {
+    background: #f8fafc;
+    border-color: #e2e8f0;
+}
+
+/* Smart Inventory Header AI pulse */
+@keyframes aiGlow {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0); }
+    50% { box-shadow: 0 0 0 8px rgba(99, 102, 241, 0.12); }
+}
+
+.smart-inv-header-badge {
+    animation: aiGlow 2.5s infinite;
+}
+

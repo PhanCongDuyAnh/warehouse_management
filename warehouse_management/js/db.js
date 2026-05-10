@@ -117,6 +117,13 @@ function migrateInventoryItem(item) {
     if (item.expiryDate === undefined) item.expiryDate = item.expiry || '2026-12-31';
     if (item.warehouseZone === undefined) item.warehouseZone = 'B';
     if (item.decayRate === undefined) item.decayRate = (item.category === 'Thực phẩm') ? 0.3 : (item.category === 'Dược phẩm') ? 0.15 : 0.05;
+    // Smart Inventory fields
+    if (item.storageZone === undefined) {
+        const zoneMap = { 'A': 'Chilled', 'B': 'Ambient', 'C': 'Ambient', 'D': 'Frozen' };
+        item.storageZone = zoneMap[item.warehouseZone] || 'Ambient';
+    }
+    if (item.batchId === undefined) item.batchId = 'LOT-' + item.id + '-001';
+    if (item.importedAt === undefined) item.importedAt = item.entryDate || item.importDate || '2026-05-01';
     return item;
 }
 
@@ -146,12 +153,15 @@ const DB_DEFAULTS = {
         { id: 'ORD-8830', customer: 'Phạm Thu Hà', address: 'Bình Thạnh, TP.HCM', product: 'Xúc xích Đức', status: 'Đang đóng gói', priority: 'Thường', phone: '0934567890', sku: 'SKU-001', qty: 100 },
     ],
     inventoryList: [
-        { id: 'SKU-001', name: 'Xúc xích Đức', category: 'Thực phẩm', stock: 1200, status: 'Còn hàng', pos: 'A-01', expiryDate: '2026-12-30', importDate: '2026-05-01', area: 24, quality: 97, minTemp: 2, maxTemp: 8, buyPrice: 85000, baseSellPrice: 120000, currentSellPrice: 120000, entryDate: '2026-05-01', warehouseZone: 'A', decayRate: 0.3 },
-        { id: 'SKU-002', name: 'Gia vị 12 món', category: 'Thực phẩm', stock: 320, status: 'Còn hàng', pos: 'B-05', expiryDate: '2027-03-15', importDate: '2026-04-20', area: 8, quality: 99, minTemp: 15, maxTemp: 30, buyPrice: 25000, baseSellPrice: 45000, currentSellPrice: 45000, entryDate: '2026-04-20', warehouseZone: 'B', decayRate: 0.1 },
-        { id: 'SKU-003', name: 'Máy sấy Dyson', category: 'Điện tử', stock: 12, status: 'Còn hàng', pos: 'C-02', expiryDate: '', importDate: '2026-03-10', area: 6, quality: 100, minTemp: 10, maxTemp: 35, buyPrice: 3500000, baseSellPrice: 5200000, currentSellPrice: 5200000, entryDate: '2026-03-10', warehouseZone: 'C', decayRate: 0.01 },
-        { id: 'SKU-004', name: 'Mì gói Hảo Hảo', category: 'Thực phẩm', stock: 45, status: 'Sắp hết hàng', pos: 'B-12', expiryDate: '2026-08-10', importDate: '2026-02-01', area: 4, quality: 88, minTemp: 15, maxTemp: 30, buyPrice: 3500, baseSellPrice: 6000, currentSellPrice: 5280, entryDate: '2026-02-01', warehouseZone: 'B', decayRate: 0.2 },
-        { id: 'SKU-005', name: 'Vaccine cúm A', category: 'Dược phẩm', stock: 200, status: 'Còn hàng', pos: 'D-01', expiryDate: '2026-11-01', importDate: '2026-05-05', area: 2, quality: 100, minTemp: 2, maxTemp: 8, buyPrice: 180000, baseSellPrice: 280000, currentSellPrice: 280000, entryDate: '2026-05-05', warehouseZone: 'A', decayRate: 0.5 },
-        { id: 'SKU-006', name: 'Nước tẩy rửa Vim', category: 'Hóa chất', stock: 560, status: 'Còn hàng', pos: 'C-08', expiryDate: '2028-01-01', importDate: '2026-04-15', area: 12, quality: 100, minTemp: 5, maxTemp: 40, buyPrice: 18000, baseSellPrice: 32000, currentSellPrice: 32000, entryDate: '2026-04-15', warehouseZone: 'C', decayRate: 0.02 },
+        { id: 'SKU-001', name: 'Xúc xích Đức', category: 'Thực phẩm', stock: 1200, status: 'Còn hàng', pos: 'A-01', expiryDate: '2026-12-30', importDate: '2026-05-01', area: 24, quality: 97, minTemp: 2, maxTemp: 8, buyPrice: 85000, baseSellPrice: 120000, currentSellPrice: 120000, entryDate: '2026-05-01', warehouseZone: 'A', decayRate: 0.3, storageZone: 'Chilled', batchId: 'LOT-SKU001-001', importedAt: '2026-05-01' },
+        { id: 'SKU-002', name: 'Gia vị 12 món', category: 'Thực phẩm', stock: 320, status: 'Còn hàng', pos: 'B-05', expiryDate: '2027-03-15', importDate: '2026-04-20', area: 8, quality: 99, minTemp: 15, maxTemp: 30, buyPrice: 25000, baseSellPrice: 45000, currentSellPrice: 45000, entryDate: '2026-04-20', warehouseZone: 'B', decayRate: 0.1, storageZone: 'Ambient', batchId: 'LOT-SKU002-001', importedAt: '2026-04-20' },
+        { id: 'SKU-003', name: 'Máy sấy Dyson', category: 'Điện tử', stock: 12, status: 'Còn hàng', pos: 'C-02', expiryDate: '', importDate: '2026-03-10', area: 6, quality: 100, minTemp: 10, maxTemp: 35, buyPrice: 3500000, baseSellPrice: 5200000, currentSellPrice: 5200000, entryDate: '2026-03-10', warehouseZone: 'C', decayRate: 0.01, storageZone: 'Ambient', batchId: 'LOT-SKU003-001', importedAt: '2026-03-10' },
+        { id: 'SKU-004', name: 'Mì gói Hảo Hảo', category: 'Thực phẩm', stock: 45, status: 'Sắp hết hàng', pos: 'B-12', expiryDate: '2026-08-10', importDate: '2026-02-01', area: 4, quality: 88, minTemp: 15, maxTemp: 30, buyPrice: 3500, baseSellPrice: 6000, currentSellPrice: 5280, entryDate: '2026-02-01', warehouseZone: 'B', decayRate: 0.2, storageZone: 'Ambient', batchId: 'LOT-SKU004-001', importedAt: '2026-02-01' },
+        { id: 'SKU-005', name: 'Vaccine cúm A', category: 'Dược phẩm', stock: 200, status: 'Còn hàng', pos: 'D-01', expiryDate: '2026-11-01', importDate: '2026-05-05', area: 2, quality: 100, minTemp: 2, maxTemp: 8, buyPrice: 180000, baseSellPrice: 280000, currentSellPrice: 280000, entryDate: '2026-05-05', warehouseZone: 'A', decayRate: 0.5, storageZone: 'Chilled', batchId: 'LOT-SKU005-001', importedAt: '2026-05-05' },
+        { id: 'SKU-006', name: 'Nước tẩy rửa Vim', category: 'Hóa chất', stock: 560, status: 'Còn hàng', pos: 'C-08', expiryDate: '2028-01-01', importDate: '2026-04-15', area: 12, quality: 100, minTemp: 5, maxTemp: 40, buyPrice: 18000, baseSellPrice: 32000, currentSellPrice: 32000, entryDate: '2026-04-15', warehouseZone: 'C', decayRate: 0.02, storageZone: 'Ambient', batchId: 'LOT-SKU006-001', importedAt: '2026-04-15' },
+        { id: 'SKU-007', name: 'Thịt bò Kobe đông lạnh', category: 'Thực phẩm', stock: 80, status: 'Còn hàng', pos: 'D-02', expiryDate: '2026-06-15', importDate: '2026-05-01', area: 10, quality: 95, minTemp: -25, maxTemp: -15, buyPrice: 650000, baseSellPrice: 980000, currentSellPrice: 980000, entryDate: '2026-05-01', warehouseZone: 'D', decayRate: 0.4, storageZone: 'Frozen', batchId: 'LOT-SKU007-001', importedAt: '2026-05-01' },
+        { id: 'SKU-008', name: 'Tôm sú đông IQF', category: 'Thực phẩm', stock: 350, status: 'Còn hàng', pos: 'D-03', expiryDate: '2026-05-25', importDate: '2026-04-10', area: 14, quality: 72, minTemp: -20, maxTemp: -18, buyPrice: 220000, baseSellPrice: 340000, currentSellPrice: 306000, entryDate: '2026-04-10', warehouseZone: 'D', decayRate: 0.6, storageZone: 'Frozen', batchId: 'LOT-SKU008-001', importedAt: '2026-04-10' },
+        { id: 'SKU-009', name: 'Kem tươi Anchor', category: 'Thực phẩm', stock: 120, status: 'Còn hàng', pos: 'D-04', expiryDate: '2026-05-18', importDate: '2026-05-03', area: 5, quality: 55, minTemp: -18, maxTemp: -16, buyPrice: 85000, baseSellPrice: 130000, currentSellPrice: 104000, entryDate: '2026-05-03', warehouseZone: 'D', decayRate: 0.8, storageZone: 'Frozen', batchId: 'LOT-SKU009-001', importedAt: '2026-05-03' },
     ],
     inboundList: [
         { id: 'NK-001', name: 'Xúc xích Đức', qty: 1200, date: '2026-05-01', pos: 'A-01', area: 24, staff: 'Nguyễn Văn An' },
@@ -277,9 +287,9 @@ const USERS_DB = [
 
 // Tab visibility per role
 const ROLE_TABS = {
-    admin: { home: 'Trang Chủ', orders: 'Đơn Hàng', inventory: 'Tồn Kho', inbound: 'Lịch Sử Nhập', outbound: 'Lịch Sử Xuất', shipping: 'Vận Chuyển', iot: 'IoT Monitor', alerts: 'Cảnh Báo', employees: 'Nhân Sự', reports: 'Thống Kê' },
-    warehouse: { home: 'Trang Chủ', inventory: 'Tồn Kho', inbound: 'Lịch Sử Nhập', outbound: 'Lịch Sử Xuất', iot: 'IoT Monitor', alerts: 'Cảnh Báo', employees: 'Nhân Sự' },
-    shipper: { home: 'Trang Chủ', shipping: 'Vận Chuyển', inventory: 'Tồn Kho', iot: 'IoT Monitor', alerts: 'Cảnh Báo' }
+    admin: { home: 'Trang Chủ', orders: 'Đơn Hàng', inventory: '🧠 Smart Inventory', inbound: 'Lịch Sử Nhập', outbound: 'Lịch Sử Xuất', shipping: 'Vận Chuyển', iot: 'IoT Monitor', alerts: 'Cảnh Báo', employees: 'Nhân Sự', reports: 'Thống Kê' },
+    warehouse: { home: 'Trang Chủ', inventory: '🧠 Smart Inventory', inbound: 'Lịch Sử Nhập', outbound: 'Lịch Sử Xuất', iot: 'IoT Monitor', alerts: 'Cảnh Báo', employees: 'Nhân Sự' },
+    shipper: { home: 'Trang Chủ', shipping: 'Vận Chuyển', inventory: '🧠 Smart Inventory', iot: 'IoT Monitor', alerts: 'Cảnh Báo' }
 };
 
 function getSession() {
