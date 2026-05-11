@@ -9,7 +9,12 @@ function getChartMethods() {
             return isNaN(val) ? 0 : val;
         },
         rndArr(base, len, pct) { return Array.from({ length: len }, () => this.rnd(base, pct)); },
-        destroyChart(id) { if (this._charts[id]) { this._charts[id].destroy(); delete this._charts[id]; } },
+        destroyChart(id) { 
+            if (this._charts && this._charts[id]) { 
+                this._charts[id].destroy(); 
+                delete this._charts[id]; 
+            } 
+        },
 
         // Sinh nhãn theo kỳ
         getLabels() {
@@ -109,14 +114,16 @@ function getChartMethods() {
                 ];
 
                 // --- Row 1: Revenue & Profit Heatmap ---
-                this.destroyChart('revMain');
-                const c1 = document.getElementById('revenueMainChart')?.getContext('2d');
+                const c1 = document.getElementById('revenueMainChart');
                 if (c1) {
+                    const ctx1 = c1.getContext('2d');
                     const scenMod = s.scenario === 'peak_season' ? 1.25 : s.scenario === 'storm' ? 0.75 : 1.0;
                     const revenueData = baseArr.map(v => this.rnd(v * scenMod, 0.1));
                     const margin = parseFloat(finance.margin) || 20;
                     const profitData = revenueData.map(v => +(v * (margin/100)).toFixed(1));
-                    this._charts['revMain'] = new Chart(c1, {
+                    
+                    this.destroyChart('revMain');
+                    this._charts['revMain'] = new Chart(ctx1, {
                         type: 'bar',
                         data: {
                             labels: labels,
@@ -125,16 +132,18 @@ function getChartMethods() {
                                 { label: 'Lợi nhuận', data: profitData, backgroundColor: 'rgba(16,185,129,0.8)', borderRadius: 6 }
                             ]
                         },
-                        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+                        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } }, scales: { y: { beginAtZero: true } } }
                     });
                 }
 
-                this.destroyChart('profitHeatmap');
-                const c2 = document.getElementById('profitHeatmapChart')?.getContext('2d');
+                const c2 = document.getElementById('profitHeatmapChart');
                 if (c2) {
+                    const ctx2 = c2.getContext('2d');
                     const hLabels = Object.keys(finance.profitHeatmap || {}).length ? Object.keys(finance.profitHeatmap) : ['HN', 'HCM', 'DN', 'HP'];
                     const hData = hLabels.map(l => (finance.profitHeatmap && finance.profitHeatmap[l]?.profit) || this.rnd(5000000, 0.5));
-                    this._charts['profitHeatmap'] = new Chart(c2, {
+                    
+                    this.destroyChart('profitHeatmap');
+                    this._charts['profitHeatmap'] = new Chart(ctx2, {
                         type: 'bar',
                         data: {
                             labels: hLabels,
@@ -145,62 +154,71 @@ function getChartMethods() {
                                 borderRadius: 10
                             }]
                         },
-                        options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+                        options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true } } }
                     });
                 }
 
                 // --- Row 2: Costs & Capital ---
-                this.destroyChart('finBreakdown');
-                const c3 = document.getElementById('financeBreakdownChart')?.getContext('2d');
-                if (c3) this._charts['finBreakdown'] = new Chart(c3, {
-                    type: 'doughnut',
-                    data: {
-                        labels: ['Giá vốn', 'Lương', 'Năng lượng', 'Vận chuyển', 'Tổn thất'],
-                        datasets: [{
-                            data: [finance.cogs || 0, finance.salaryCost || 0, finance.electricityCost || 0, finance.fuelCost || 0, finance.lossCost || 0],
-                            backgroundColor: ['#6366f1', '#a855f7', '#f59e0b', '#ef4444', '#64748b'],
-                            borderWidth: 0
-                        }]
-                    },
-                    options: { responsive: true, maintainAspectRatio: false, cutout: '70%', plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 9 } } } } }
-                });
+                const c3 = document.getElementById('financeBreakdownChart');
+                if (c3) {
+                    const ctx3 = c3.getContext('2d');
+                    this.destroyChart('finBreakdown');
+                    this._charts['finBreakdown'] = new Chart(ctx3, {
+                        type: 'doughnut',
+                        data: {
+                            labels: ['Giá vốn', 'Lương', 'Năng lượng', 'Vận chuyển', 'Tổn thất'],
+                            datasets: [{
+                                data: [finance.cogs || 0, finance.salaryCost || 0, finance.electricityCost || 0, finance.fuelCost || 0, finance.lossCost || 0],
+                                backgroundColor: ['#6366f1', '#a855f7', '#f59e0b', '#ef4444', '#64748b'],
+                                borderWidth: 0
+                            }]
+                        },
+                        options: { responsive: true, maintainAspectRatio: false, cutout: '70%', plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 9 } } } } }
+                    });
+                }
 
-                this.destroyChart('capDonut');
-                const cCap = document.getElementById('capitalDonutChart')?.getContext('2d');
-                if (cCap) this._charts['capDonut'] = new Chart(cCap, {
-                    type: 'pie',
-                    data: {
-                        labels: ['Vốn hàng hóa', 'Vốn lưu động', 'Nợ ngắn hạn', 'Khác'],
-                        datasets: [{
-                            data: [65, 20, 10, 5],
-                            backgroundColor: ['#4f46e5', '#10b981', '#f59e0b', '#94a3b8'],
-                            borderWidth: 0
-                        }]
-                    },
-                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 9 } } } } }
-                });
+                const cCap = document.getElementById('capitalDonutChart');
+                if (cCap) {
+                    const ctxCap = cCap.getContext('2d');
+                    this.destroyChart('capDonut');
+                    this._charts['capDonut'] = new Chart(ctxCap, {
+                        type: 'pie',
+                        data: {
+                            labels: ['Vốn hàng hóa', 'Vốn lưu động', 'Nợ ngắn hạn', 'Khác'],
+                            datasets: [{
+                                data: [65, 20, 10, 5],
+                                backgroundColor: ['#4f46e5', '#10b981', '#f59e0b', '#94a3b8'],
+                                borderWidth: 0
+                            }]
+                        },
+                        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 9 } } } } }
+                    });
+                }
 
                 // --- Row 3: Forecasting ---
-                this.destroyChart('invForecast');
-                const c4 = document.getElementById('inventoryForecastChart')?.getContext('2d');
+                const c4 = document.getElementById('inventoryForecastChart');
                 if (c4) {
+                    const ctx4 = c4.getContext('2d');
                     const invBase = Array.from({ length: labels.length }, (_, i) => this.rnd(200 + i * 8, 0.12));
-                    this._charts['invForecast'] = new Chart(c4, {
+                    this.destroyChart('invForecast');
+                    this._charts['invForecast'] = new Chart(ctx4, {
                         type: 'line',
                         data: { labels, datasets: [{ label: 'Tồn kho dự báo', data: invBase, borderColor: '#6366f1', backgroundColor: 'rgba(99,102,241,0.1)', fill: true, tension: 0.4, pointRadius: 0, borderWidth: 2 }] },
                         options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
                     });
                 }
 
-                this.destroyChart('revForecast');
-                const cRevF = document.getElementById('revenueForecastChart')?.getContext('2d');
+                const cRevF = document.getElementById('revenueForecastChart');
                 if (cRevF) {
-                    const lastRev = baseArr[baseArr.length - 1];
+                    const ctxRevF = cRevF.getContext('2d');
+                    const lastRev = baseArr[baseArr.length - 1] || 1000;
                     const fLabels = Array.from({length: 6}, (_, i) => '+' + (i+1) + 'm');
                     const opt = fLabels.map((_, i) => this.rnd(lastRev * Math.pow(1.15, i+1), 0.05));
                     const base = fLabels.map((_, i) => this.rnd(lastRev * Math.pow(1.05, i+1), 0.05));
                     const pes = fLabels.map((_, i) => this.rnd(lastRev * Math.pow(0.9, i+1), 0.05));
-                    this._charts['revForecast'] = new Chart(cRevF, {
+                    
+                    this.destroyChart('revForecast');
+                    this._charts['revForecast'] = new Chart(ctxRevF, {
                         type: 'line',
                         data: {
                             labels: fLabels,
@@ -215,51 +233,66 @@ function getChartMethods() {
                 }
 
                 // --- Row 4: Performance ---
-                this.destroyChart('ordVel');
-                const c5 = document.getElementById('orderVelocityChart')?.getContext('2d');
-                if (c5) this._charts['ordVel'] = new Chart(c5, {
-                    type: 'bar',
-                    data: { labels, datasets: [{ label: 'Đơn/ngày', data: labels.map(() => this.rnd(42, 0.2)), backgroundColor: 'rgba(99,102,241,0.7)', borderRadius: 5 }] },
-                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
-                });
+                const c5 = document.getElementById('orderVelocityChart');
+                if (c5) {
+                    const ctx5 = c5.getContext('2d');
+                    this.destroyChart('ordVel');
+                    this._charts['ordVel'] = new Chart(ctx5, {
+                        type: 'bar',
+                        data: { labels, datasets: [{ label: 'Đơn/ngày', data: labels.map(() => this.rnd(42, 0.2)), backgroundColor: 'rgba(99,102,241,0.7)', borderRadius: 5 }] },
+                        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+                    });
+                }
 
-                this.destroyChart('inOut');
-                const c6 = document.getElementById('inOutChart')?.getContext('2d');
-                if (c6) this._charts['inOut'] = new Chart(c6, {
-                    type: 'bar',
-                    data: {
-                        labels,
-                        datasets: [
-                            { label: 'Nhập', data: baseArr.map(v => this.rnd(v * 0.7, 0.2)), backgroundColor: 'rgba(16,185,129,0.75)', borderRadius: 5 },
-                            { label: 'Xuất', data: baseArr.map(v => this.rnd(v * 0.85, 0.2)), backgroundColor: 'rgba(245,158,11,0.75)', borderRadius: 5 }
-                        ]
-                    },
-                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
-                });
+                const c6 = document.getElementById('inOutChart');
+                if (c6) {
+                    const ctx6 = c6.getContext('2d');
+                    this.destroyChart('inOut');
+                    this._charts['inOut'] = new Chart(ctx6, {
+                        type: 'bar',
+                        data: {
+                            labels,
+                            datasets: [
+                                { label: 'Nhập', data: baseArr.map(v => this.rnd(v * 0.7, 0.2)), backgroundColor: 'rgba(16,185,129,0.75)', borderRadius: 5 },
+                                { label: 'Xuất', data: baseArr.map(v => this.rnd(v * 0.85, 0.2)), backgroundColor: 'rgba(245,158,11,0.75)', borderRadius: 5 }
+                            ]
+                        },
+                        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+                    });
+                }
 
                 // --- Row 5: Operational Costs ---
-                this.destroyChart('opCost');
-                const cOp = document.getElementById('operationCostChart')?.getContext('2d');
-                if (cOp) this._charts['opCost'] = new Chart(cOp, {
-                    type: 'line',
-                    data: {
-                        labels,
-                        datasets: [
-                            { label: 'Năng lượng', data: baseArr.map(() => this.rnd(1200000, 0.15)), borderColor: '#f59e0b', tension: 0.4 },
-                            { label: 'Nhiên liệu', data: baseArr.map(() => this.rnd(800000, 0.2)), borderColor: '#a855f7', tension: 0.4 },
-                            { label: 'Nhân sự', data: baseArr.map(() => this.rnd(2500000, 0.05)), borderColor: '#6366f1', tension: 0.4 }
-                        ]
-                    },
-                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
-                });
+                const cOp = document.getElementById('operationCostChart');
+                if (cOp) {
+                    const ctxOp = cOp.getContext('2d');
+                    this.destroyChart('opCost');
+                    this._charts['opCost'] = new Chart(ctxOp, {
+                        type: 'line',
+                        data: {
+                            labels,
+                            datasets: [
+                                { label: 'Năng lượng', data: baseArr.map(() => this.rnd(1200000, 0.15)), borderColor: '#f59e0b', tension: 0.4 },
+                                { label: 'Nhiên liệu', data: baseArr.map(() => this.rnd(800000, 0.2)), borderColor: '#a855f7', tension: 0.4 },
+                                { label: 'Nhân sự', data: baseArr.map(() => this.rnd(2500000, 0.05)), borderColor: '#6366f1', tension: 0.4 }
+                            ]
+                        },
+                        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+                    });
+                }
 
-                // Auto-refresh logic
-                clearInterval(this._reportInterval);
-                this._reportInterval = setInterval(() => {
-                    if (this.currentTab === 'reports') this.refreshReports();
-                }, 30000);
+                // Auto-refresh logic (only if not already running)
+                if (!this._reportInterval) {
+                    this._reportInterval = setInterval(() => {
+                        if (this.currentTab === 'reports' && !document.hidden) {
+                            this.refreshReports();
+                        }
+                    }, 30000);
+                }
             } else {
-                clearInterval(this._reportInterval);
+                if (this._reportInterval) {
+                    clearInterval(this._reportInterval);
+                    this._reportInterval = null;
+                }
             }
         }
     };

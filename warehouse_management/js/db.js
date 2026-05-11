@@ -317,10 +317,10 @@ const HUB_DATA = {
 };
 
 const VEHICLE_CONFIGS = {
-    'Xe Van':      { fuelPerKm: 0.08, avgSpeedKmh: 45, icon: 'fas fa-truck-ramp-box', co2PerKm: 0.15 },
-    'Xe tải 1.5T': { fuelPerKm: 0.12, avgSpeedKmh: 55, icon: 'fas fa-truck',       co2PerKm: 0.28 },
-    'Xe tải 2.5T đông lạnh': { fuelPerKm: 0.18, avgSpeedKmh: 48, icon: 'fas fa-snowflake', co2PerKm: 0.35 },
-    'Xe tải 5T':   { fuelPerKm: 0.25, avgSpeedKmh: 42, icon: 'fas fa-truck-moving', co2PerKm: 0.55 },
+    'Xe Van':      { fuelPerKm: 0.08, avgSpeedKmh: 45, icon: 'fas fa-truck-ramp-box', color: '#6366f1', co2PerKm: 0.15 },
+    'Xe tải 1.5T': { fuelPerKm: 0.12, avgSpeedKmh: 55, icon: 'fas fa-truck',          color: '#10b981', co2PerKm: 0.28 },
+    'Xe tải 2.5T đông lạnh': { fuelPerKm: 0.18, avgSpeedKmh: 48, icon: 'fas fa-truck-front', color: '#0ea5e9', co2PerKm: 0.35 },
+    'Xe tải 5T':   { fuelPerKm: 0.25, avgSpeedKmh: 42, icon: 'fas fa-truck-moving', color: '#7c3aed', co2PerKm: 0.55 },
 };
 
 // ==========================================

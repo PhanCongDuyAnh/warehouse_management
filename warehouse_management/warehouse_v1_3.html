@@ -303,6 +303,45 @@
         <!-- Main Content Area -->
         <main class="ml-72 flex-1 p-8 bg-slate-50 min-h-screen overflow-x-hidden">
 
+            <!-- Real-time Live Hub Widget -->
+            <div class="mb-8 flex flex-wrap items-center justify-between gap-4 bg-white/40 backdrop-blur-md rounded-[2.5rem] p-4 border border-white/60 shadow-sm">
+                <div class="flex items-center gap-6 px-4">
+                    <!-- Live Clock -->
+                    <div class="flex items-center gap-3 border-r border-slate-200 pr-6">
+                        <div class="w-12 h-12 bg-slate-900 rounded-2xl flex items-center justify-center text-white shadow-xl">
+                            <i class="fas fa-clock text-xl"></i>
+                        </div>
+                        <div>
+                            <p class="text-[10px] font-black uppercase text-slate-400 tracking-widest leading-none mb-1">Thời gian thực</p>
+                            <p class="text-xl font-black text-slate-900 tracking-tighter leading-none" x-text="currentTime.toLocaleTimeString('vi-VN', {hour:'2-digit', minute:'2-digit', second:'2-digit'})"></p>
+                        </div>
+                    </div>
+                    <!-- Live Weather -->
+                    <div class="flex items-center gap-4">
+                        <div class="w-12 h-12 bg-amber-50 rounded-2xl flex items-center justify-center text-amber-500 shadow-sm border border-amber-100">
+                            <i class="fas" :class="getWeatherLive().icon + ' text-xl'"></i>
+                        </div>
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <span class="text-xl font-black text-slate-900 tracking-tighter" x-text="getWeatherLive().temp + '°C'"></span>
+                                <span class="text-[9px] font-black uppercase px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-600" x-text="getWeatherLive().condition"></span>
+                            </div>
+                            <div class="flex items-center gap-3 text-[9px] font-black text-slate-400 uppercase tracking-widest mt-0.5">
+                                <span class="flex items-center gap-1"><i class="fas fa-droplet text-blue-400"></i> <span x-text="getWeatherLive().humidity + '%'"></span></span>
+                                <span class="flex items-center gap-1"><i class="fas fa-wind text-slate-300"></i> <span x-text="getWeatherLive().wind + ' km/h'"></span></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="flex items-center gap-2 px-6">
+                    <div class="text-right">
+                        <p class="text-[8px] font-black uppercase text-slate-400 tracking-widest mb-0.5">Vị trí trạm</p>
+                        <p class="text-[11px] font-black text-slate-800 italic">Hanoi Hub Center <i class="fas fa-location-dot text-red-500 ml-1"></i></p>
+                    </div>
+                </div>
+            </div>
+
             <!-- Header -->
             <header class="flex items-center justify-between mb-8">
                 <div>
@@ -791,14 +830,42 @@
                     </div>
                 </div>
 
+                <!-- AI Smart Suggestions (Proactive Insights) -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <template x-for="sug in getAiSuggestions()" :key="sug.title">
+                        <div @click="sug.action()" 
+                             class="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-all cursor-pointer group flex items-center gap-4 relative overflow-hidden">
+                            <div class="absolute -right-2 -top-2 w-12 h-12 bg-slate-50 rounded-full group-hover:scale-150 transition-transform duration-500"></div>
+                            <div class="w-10 h-10 rounded-xl flex items-center justify-center text-white text-sm shadow-lg group-hover:scale-110 transition relative z-10"
+                                :style="'background:' + sug.color">
+                                <i class="fas" :class="sug.icon"></i>
+                            </div>
+                            <div class="flex-1 relative z-10">
+                                <h5 class="text-[10px] font-black text-slate-800 uppercase tracking-widest" x-text="sug.title"></h5>
+                                <p class="text-[9px] font-bold text-slate-400" x-text="sug.desc"></p>
+                            </div>
+                            <i class="fas fa-chevron-right text-[9px] text-slate-300 group-hover:translate-x-1 transition relative z-10"></i>
+                        </div>
+                    </template>
+                </div>
+
                 <!-- AI Discount Banner -->
                 <template x-if="aiDiscountSuggestions().length > 0">
                     <div class="ai-discount-banner">
-                        <div class="flex items-start gap-3 mb-3">
-                            <div class="w-8 h-8 bg-white/20 rounded-xl flex items-center justify-center shrink-0"><i class="fas fa-robot text-white text-sm"></i></div>
+                        <div class="flex items-start gap-4">
+                            <div class="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center shrink-0 border border-white/30"><i class="fas fa-robot text-white text-lg"></i></div>
                             <div>
-                                <p class="text-white font-black text-sm">🤖 AI Đề Xuất Giảm Giá</p>
-                                <p class="text-indigo-200 text-[10px] font-bold"><span x-text="aiDiscountSuggestions().length"></span> lô hàng cần điều chỉnh giá để tránh thất thoát</p>
+                                <p class="text-white font-black text-sm uppercase tracking-tight">AI đề xuất chiến dịch giảm giá</p>
+                                <p class="text-indigo-100 text-[10px] font-bold">Phát hiện <span class="text-white" x-text="aiDiscountSuggestions().length"></span> lô hàng đang giảm chất lượng hoặc sắp hết hạn. Cần thanh lý gấp để tối ưu dòng tiền.</p>
+                                <div class="flex flex-wrap gap-2 mt-4">
+                                    <template x-for="sug in aiDiscountSuggestions().slice(0, 3)">
+                                        <div @click="openDiscountModal(inventoryList.find(p=>p.id===sug.id), sug.suggestedDiscount)"
+                                            class="ai-discount-item">
+                                            <span x-text="inventoryList.find(p=>p.id===sug.id)?.name"></span>
+                                            <span class="ai-discount-pct" x-text="'-' + sug.suggestedDiscount + '%'"></span>
+                                        </div>
+                                    </template>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -1202,7 +1269,9 @@
             </div>
 
             <!-- TAB: LOGISTICS & GPS TRACKING -->
-            <div x-show="currentTab === 'logistics'" class="space-y-6" x-transition x-init="$nextTick(() => initLogisticsMap())">
+            <div x-show="currentTab === 'logistics'" 
+                 x-effect="if(currentTab === 'logistics') { $nextTick(() => initLogisticsMap()); }"
+                 class="space-y-6" x-transition x-init="$nextTick(() => initLogisticsMap())">
                 <div class="grid grid-cols-1 xl:grid-cols-4 gap-6 h-[700px]">
                     <!-- Map Sidebar / Controls -->
                     <div class="space-y-6 overflow-y-auto pr-2 no-scrollbar">
@@ -1284,9 +1353,10 @@
                                 <p class="text-slate-400 mb-2 tracking-widest">Hệ thống Hub HN</p>
                                 <div class="space-y-1.5">
                                     <template x-for="(hub, name) in HUB_DATA">
-                                        <div class="flex items-center gap-2">
-                                            <div class="w-2 h-2 rounded-full" :style="'background:' + hub.color"></div>
-                                            <span x-text="hub.name"></span>
+                                        <div @click="focusHub(name)" 
+                                            class="flex items-center gap-2 cursor-pointer hover:bg-white/50 p-1 rounded-lg transition-all group">
+                                            <div class="w-2.5 h-2.5 rounded-full border border-white shadow-sm group-hover:scale-125 transition-transform" :style="'background:' + hub.color"></div>
+                                            <span class="group-hover:text-indigo-600 transition-colors" x-text="hub.name"></span>
                                         </div>
                                     </template>
                                 </div>
@@ -1351,7 +1421,8 @@
                 <!-- IoT Grid -->
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                     <template x-for="(config, z) in ZONE_CONFIGS" :key="z">
-                        <div class="bg-white rounded-[2.5rem] p-6 border shadow-sm hover:shadow-xl transition-all duration-500 group relative overflow-hidden">
+                        <div @click="showZoneDetails(z)"
+                            class="bg-white rounded-[2.5rem] p-6 border shadow-sm hover:shadow-xl transition-all duration-500 group relative overflow-hidden cursor-pointer">
                             <div class="absolute -right-4 -bottom-4 w-24 h-24 rounded-full blur-3xl opacity-10 group-hover:opacity-30 transition-opacity" :style="'background:' + config.color"></div>
                             <div class="relative z-10">
                                 <div class="flex items-center justify-between mb-6">
@@ -1389,9 +1460,91 @@
                                         </div>
                                     </div>
                                 </div>
+                                
+                                <div class="mt-4 pt-4 border-t border-dashed flex items-center justify-between opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <span class="text-[8px] font-black uppercase text-indigo-500">Xem chi tiết <i class="fas fa-arrow-right ml-1"></i></span>
+                                    <button @click.stop="toggleMaintenance(z)" 
+                                        class="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center hover:bg-slate-900 hover:text-white transition">
+                                        <i class="fas fa-screwdriver-wrench text-xs"></i>
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </template>
+                </div>
+
+                <!-- IoT Detail Modal -->
+                <div x-show="showIotModal" class="fixed inset-0 z-[10000] flex items-center justify-center p-6 bg-slate-950/40 backdrop-blur-sm" x-cloak x-transition>
+                    <div class="bg-white w-full max-w-2xl rounded-[3rem] shadow-2xl overflow-hidden border border-white/20 modal-animate" @click.away="showIotModal = false">
+                        <template x-if="selectedIotZone">
+                            <div class="p-10">
+                                <div class="flex items-center justify-between mb-8">
+                                    <div class="flex items-center gap-4">
+                                        <div class="w-16 h-16 rounded-[2rem] flex items-center justify-center text-white text-2xl shadow-xl" :style="'background:' + selectedIotZone.color">
+                                            <i :class="selectedIotZone.icon"></i>
+                                        </div>
+                                        <div>
+                                            <h3 class="text-2xl font-black text-slate-900 tracking-tighter" x-text="'Chi tiết Cảm biến Zone ' + selectedIotZone.id"></h3>
+                                            <p class="text-slate-400 text-[11px] font-bold uppercase tracking-widest" x-text="selectedIotZone.label"></p>
+                                        </div>
+                                    </div>
+                                    <button @click="showIotModal = false" class="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center hover:bg-red-50 hover:text-red-500 transition text-xl">
+                                        <i class="fas fa-xmark"></i>
+                                    </button>
+                                </div>
+
+                                <div class="grid grid-cols-3 gap-6 mb-8">
+                                    <div class="bg-slate-50 p-6 rounded-3xl border border-slate-100 text-center">
+                                        <p class="text-[10px] font-black text-slate-400 uppercase mb-2">Nhiệt độ hiện tại</p>
+                                        <h4 class="text-3xl font-black text-slate-900" x-text="selectedIotZone.temp.toFixed(2) + '°C'"></h4>
+                                    </div>
+                                    <div class="bg-slate-50 p-6 rounded-3xl border border-slate-100 text-center">
+                                        <p class="text-[10px] font-black text-slate-400 uppercase mb-2">Độ ẩm hiện tại</p>
+                                        <h4 class="text-3xl font-black text-slate-900" x-text="selectedIotZone.humi.toFixed(1) + '%'"></h4>
+                                    </div>
+                                    <div class="bg-slate-50 p-6 rounded-3xl border border-slate-100 text-center">
+                                        <p class="text-[10px] font-black text-slate-400 uppercase mb-2">Tín hiệu mạng</p>
+                                        <h4 class="text-lg font-black text-emerald-500 uppercase flex items-center justify-center gap-2">
+                                            <i class="fas fa-signal"></i> EXCELLENT
+                                        </h4>
+                                    </div>
+                                </div>
+
+                                <div class="bg-slate-900 rounded-[2rem] p-8 text-white mb-8">
+                                    <h4 class="text-xs font-black uppercase tracking-widest mb-4 flex items-center gap-2">
+                                        <i class="fas fa-sliders text-indigo-400"></i> Cấu hình ngưỡng cảnh báo
+                                    </h4>
+                                    <div class="space-y-6">
+                                        <div>
+                                            <div class="flex justify-between text-[10px] font-black uppercase text-slate-400 mb-3">
+                                                <span>Dải nhiệt độ an toàn</span>
+                                                <span class="text-indigo-400" x-text="selectedIotZone.minTemp + '°C — ' + selectedIotZone.maxTemp + '°C'"></span>
+                                            </div>
+                                            <div class="relative h-2 bg-white/10 rounded-full">
+                                                <div class="absolute h-full bg-indigo-500 rounded-full" :style="'left:' + ((selectedIotZone.minTemp + 30) / 70 * 100) + '%; right:' + (100 - (selectedIotZone.maxTemp + 30) / 70 * 100) + '%'"></div>
+                                            </div>
+                                        </div>
+                                        <div class="flex items-center justify-between pt-2">
+                                            <div>
+                                                <p class="text-sm font-black">Chế độ Bảo trì</p>
+                                                <p class="text-[10px] text-slate-400 font-bold">Tạm dừng nhận cảnh báo cho zone này</p>
+                                            </div>
+                                            <button @click="toggleMaintenance(selectedIotZone.id); selectedIotZone.isMaintenance = !selectedIotZone.isMaintenance"
+                                                :class="selectedIotZone.isMaintenance ? 'bg-amber-500 shadow-amber-200' : 'bg-slate-700'"
+                                                class="px-6 py-2 rounded-xl text-[10px] font-black uppercase transition-all shadow-lg">
+                                                <span x-text="selectedIotZone.isMaintenance ? 'ĐANG BẢO TRÌ' : 'BẬT BẢO TRÌ'"></span>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="flex justify-end gap-4">
+                                    <button @click="showIotModal = false" class="px-8 py-4 bg-slate-100 text-slate-600 rounded-2xl text-[11px] font-black uppercase hover:bg-slate-200 transition">Đóng</button>
+                                    <button @click="showIotModal = false; toast('Đã cập nhật cấu hình sensor thành công', 'success')" class="px-8 py-4 bg-indigo-600 text-white rounded-2xl text-[11px] font-black uppercase hover:bg-indigo-700 transition shadow-xl shadow-indigo-200">Lưu thay đổi</button>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
                 </div>
 
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -1607,7 +1760,9 @@
             </div>
 
             <!-- TAB: BÁO CÁO & THỐNG KÊ (FINANCE & STATS MERGED) -->
-            <div x-show="currentTab === 'reports'" class="space-y-6" x-transition x-cloak>
+            <div x-show="currentTab === 'reports'" 
+                x-effect="if(currentTab === 'reports') { $nextTick(() => initCharts('reports')); }"
+                class="space-y-6" x-transition x-cloak>
 
                 <!-- ── SIM ENGINE STATUS PANEL ── -->
                 <div

@@ -12,7 +12,6 @@ function getIotMethods() {
                     const ctx = document.getElementById(`iot-chart-${zone}`);
                     if (!ctx) return;
                     
-                    // Xóa biểu đồ cũ nếu có
                     if (window[`chart_iot_${zone}`]) {
                         window[`chart_iot_${zone}`].destroy();
                     }
@@ -20,15 +19,15 @@ function getIotMethods() {
                     window[`chart_iot_${zone}`] = new Chart(ctx, {
                         type: 'line',
                         data: {
-                            labels: Array(10).fill(''),
+                            labels: Array(20).fill(''),
                             datasets: [{
-                                label: 'Temperature',
-                                data: Array(10).fill(this.ZONE_CONFIGS[zone].baseTemp),
+                                label: 'Nhiệt độ',
+                                data: Array(20).fill(this.iotData.zones[zone].temp),
                                 borderColor: this.ZONE_CONFIGS[zone].color,
-                                backgroundColor: this.ZONE_CONFIGS[zone].color + '20',
+                                backgroundColor: this.ZONE_CONFIGS[zone].color + '10',
                                 borderWidth: 2,
                                 fill: true,
-                                tension: 0.4,
+                                tension: 0.5,
                                 pointRadius: 0
                             }]
                         },
@@ -42,7 +41,8 @@ function getIotMethods() {
                                     grid: { display: false },
                                     ticks: { display: false }
                                 }
-                            }
+                            },
+                            animation: { duration: 800 }
                         }
                     });
                 });
@@ -50,38 +50,53 @@ function getIotMethods() {
         },
 
         updateIotRealtime() {
+            if (!this.iotData || !this.iotData.zones) return;
+
             Object.keys(this.iotData.zones).forEach(z => {
                 const config = this.ZONE_CONFIGS[z];
                 const zoneData = this.iotData.zones[z];
                 
-                // Giả lập biến động nhẹ
-                zoneData.temp += (Math.random() - 0.5) * 0.1;
-                zoneData.humi += (Math.random() - 0.5) * 0.5;
-                zoneData.vibration = Math.random() * 0.05;
+                if (zoneData.isMaintenance) return;
 
-                // Kiểm tra ngưỡng
-                if (zoneData.temp > config.maxTemp || zoneData.temp < config.minTemp) {
+                // Kiểm tra ngưỡng cảnh báo
+                if (zoneData.temp > config.maxTemp + 2 || zoneData.temp < config.minTemp - 2) {
+                    zoneData.status = 'Critical';
+                } else if (zoneData.temp > config.maxTemp || zoneData.temp < config.minTemp) {
                     zoneData.status = 'Warning';
                 } else {
                     zoneData.status = 'Normal';
                 }
 
-                // Cập nhật Chart
-                if (window[`chart_iot_${z}`]) {
+                // Cập nhật biểu đồ nếu đang ở tab IoT
+                if (this.currentTab === 'iot' && window[`chart_iot_${z}`]) {
                     const chart = window[`chart_iot_${z}`];
                     chart.data.datasets[0].data.push(zoneData.temp);
                     chart.data.datasets[0].data.shift();
-                    chart.update('none');
+                    chart.update('quiet');
                 }
             });
-            saveIotData(this.iotData);
+        },
+
+        showZoneDetails(z) {
+            const zone = this.iotData.zones[z];
+            const cfg = this.ZONE_CONFIGS[z];
+            this.selectedIotZone = { id: z, ...zone, ...cfg };
+            this.showIotModal = true;
+        },
+
+        toggleMaintenance(z) {
+            const zone = this.iotData.zones[z];
+            zone.isMaintenance = !zone.isMaintenance;
+            zone.status = zone.isMaintenance ? 'Maintenance' : 'Normal';
+            this.toast(`${zone.isMaintenance ? 'Đã bật' : 'Đã tắt'} chế độ bảo trì cho Zone ${z}`, 'info');
         },
 
         getSensorStatusClass(status) {
             return {
                 'Normal': 'bg-emerald-500',
-                'Warning': 'bg-orange-500 animate-pulse',
-                'Critical': 'bg-red-500 animate-ping'
+                'Warning': 'bg-amber-500 animate-pulse',
+                'Critical': 'bg-red-500 animate-ping',
+                'Maintenance': 'bg-slate-400'
             }[status] || 'bg-slate-300';
         }
     };

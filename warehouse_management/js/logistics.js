@@ -13,9 +13,17 @@ function getLogisticsMethods() {
     return {
         initLogisticsMap() {
             if (map) {
-                setTimeout(() => map.invalidateSize(), 100);
+                // Tăng delay để đảm bảo Alpine.js đã render xong DOM
+                setTimeout(() => {
+                    map.invalidateSize();
+                    window.dispatchEvent(new Event('resize'));
+                }, 500);
                 return;
             }
+
+            // Đảm bảo container tồn tại trước khi khởi tạo
+            const container = document.getElementById('logistics-map');
+            if (!container) return;
 
             // Center on Hanoi
             map = L.map('logistics-map').setView([21.0000, 105.8000], 12);
@@ -28,10 +36,14 @@ function getLogisticsMethods() {
             Object.keys(HUB_DATA).forEach(name => {
                 const hub = HUB_DATA[name];
                 const icon = L.divIcon({
-                    html: `<div class="hub-marker" style="background:${hub.color}"><i class="fas ${hub.type === 'main' ? 'fa-star' : 'fa-building'}"></i></div>`,
+                    html: `<div class="hub-marker-new" style="background:${hub.color}">
+                            <div class="hub-inner">
+                                <i class="fas ${hub.type === 'main' ? 'fa-warehouse' : 'fa-house-chimney-window'}"></i>
+                            </div>
+                           </div>`,
                     className: 'custom-div-icon',
-                    iconSize: [30, 30],
-                    iconAnchor: [15, 15]
+                    iconSize: [40, 45],
+                    iconAnchor: [20, 40]
                 });
 
                 hubMarkers[name] = L.marker(hub.coords, { icon })
@@ -68,23 +80,18 @@ function getLogisticsMethods() {
             });
 
             activeShipments.forEach(s => {
-                // If coordinates are missing, let the simulation logic handle it (but we can force it here too)
-                if (!s.currentCoords) {
-                    // Force initialization if missing
-                    const hub = HUB_DATA[s.originHub] || HUB_DATA['Long Biên'];
-                    s.originCoords = hub.coords;
-                    s.currentCoords = [...hub.coords];
-                    s.destCoords = s.destCoords || [21.0 + (Math.random() - 0.5) * 0.2, 105.8 + (Math.random() - 0.5) * 0.2];
-                }
-
+                const vCfg = VEHICLE_CONFIGS[s.vehicleType] || VEHICLE_CONFIGS['Xe tải 1.5T'];
                 const isFocused = s.trackId === this.focusedVehicleId;
+                
+                // Cấu trúc ký hiệu xe mới: Có hướng mũi tên và icon đặc thù
                 const icon = L.divIcon({
-                    html: `<div class="vehicle-marker ${s.status === 'Đã nhận' ? 'delivered' : ''} ${isFocused ? 'focused' : ''}" style="border-color:${VEHICLE_CONFIGS[s.vehicleType]?.color || '#6366f1'}">
-                            <i class="fas ${VEHICLE_CONFIGS[s.vehicleType]?.icon || 'fa-truck'}"></i>
+                    html: `<div class="vehicle-marker-new ${isFocused ? 'focused' : ''}" style="background:${vCfg.color || '#6366f1'}">
+                            <i class="${vCfg.icon}"></i>
+                            ${s.vehicleType.includes('đông lạnh') ? '<div class="ice-badge"><i class="fas fa-snowflake"></i></div>' : ''}
                            </div>`,
                     className: 'custom-div-icon',
-                    iconSize: [34, 34],
-                    iconAnchor: [17, 17]
+                    iconSize: [32, 32],
+                    iconAnchor: [16, 16]
                 });
 
                 if (markers[s.trackId]) {
@@ -92,7 +99,7 @@ function getLogisticsMethods() {
                     markers[s.trackId].setIcon(icon);
                 } else {
                     markers[s.trackId] = L.marker(s.currentCoords, { icon }).addTo(map)
-                        .bindPopup(`<b>${s.trackId}</b><br>Đơn: ${s.orderId}<br>Tài xế: ${s.driverName}`);
+                        .bindPopup(`<b>${s.trackId}</b><br>Loại: ${s.vehicleType}<br>Tài xế: ${s.driverName}`);
                 }
 
                 if (s.destCoords) {
@@ -117,6 +124,20 @@ function getLogisticsMethods() {
                 map.flyTo(s.currentCoords, 15);
                 if (markers[s.trackId]) markers[s.trackId].openPopup();
                 this.updateMapMarkers();
+            }
+        },
+
+        focusHub(name) {
+            const hub = HUB_DATA[name];
+            if (map && hub) {
+                map.flyTo(hub.coords, 15, {
+                    animate: true,
+                    duration: 1.5
+                });
+                if (hubMarkers[name]) {
+                    hubMarkers[name].openPopup();
+                }
+                this.toast(`Đang định vị Hub: ${hub.name}`, 'info', 'Hub Navigation');
             }
         },
 

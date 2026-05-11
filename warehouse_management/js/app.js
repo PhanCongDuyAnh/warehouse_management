@@ -43,6 +43,9 @@ function warehouseApp() {
         focusedVehicleId: null,
         showHandlingModal: false,
         selectedAlert: null,
+        currentTime: new Date(),
+        showIotModal: false,
+        selectedIotZone: null,
 
         // Chatbot
         userInput: '', isTyping: false, showSuggestions: true,
@@ -268,7 +271,7 @@ function warehouseApp() {
             const item = this.inventoryList.find(p => p.id === sku);
             if (item) {
                 item.currentSellPrice = Math.round(item.baseSellPrice * (1 - pct / 100));
-                this.showToast(`✅ Đã áp dụng giảm ${pct}% cho ${item.name}`, 'success');
+                this.toast(`✅ Đã áp dụng giảm ${pct}% cho ${item.name}`, 'success', 'AI Price Optimization');
             }
             this.showDiscountModal = false;
             this.discountTarget = null;
@@ -276,6 +279,53 @@ function warehouseApp() {
         openDiscountModal(item, pct) {
             this.discountTarget = { ...item, suggestedDiscount: pct };
             this.showDiscountModal = true;
+        },
+        getAiSuggestions() {
+            const sugs = [];
+            
+            // 1. Đề xuất nhập hàng
+            const lowStock = this.inventoryList.filter(p => p.stock < 50);
+            if (lowStock.length > 0) {
+                sugs.push({
+                    type: 'reorder',
+                    title: 'AI: Nhập hàng',
+                    desc: `${lowStock.length} sản phẩm sắp hết.`,
+                    icon: 'fa-cart-plus',
+                    color: '#10b981',
+                    action: () => { this.showAddProduct = true; }
+                });
+            }
+
+            // 2. Tối ưu lưu trữ
+            const mismatch = this.inventoryList.filter(p => {
+                const zone = this.iotData.zones[p.warehouseZone];
+                return zone && (zone.temp > p.maxTemp || zone.temp < p.minTemp);
+            });
+            if (mismatch.length > 0) {
+                sugs.push({
+                    type: 'storage',
+                    title: 'AI: Lưu trữ',
+                    desc: `${mismatch.length} mặt hàng sai zone.`,
+                    icon: 'fa-truck-ramp-box',
+                    color: '#f59e0b',
+                    action: () => { this.currentTab = 'logistics'; }
+                });
+            }
+
+            // 3. Bảo trì
+            const sensorIssue = Object.keys(this.iotData.zones).filter(z => this.iotData.zones[z].status === 'Critical');
+            if (sensorIssue.length > 0) {
+                sugs.push({
+                    type: 'maintenance',
+                    title: 'AI: Bảo trì',
+                    desc: `Lỗi cảm biến Zone ${sensorIssue.join(', ')}.`,
+                    icon: 'fa-screwdriver-wrench',
+                    color: '#ef4444',
+                    action: () => { this.showZoneDetails(sensorIssue[0]); }
+                });
+            }
+
+            return sugs;
         },
     };
 
@@ -310,6 +360,11 @@ function warehouseApp() {
                     this.focusVehicle(s);
                     this.toast(`Đã định vị thành công phương tiện ${s.trackId}`, 'success', 'GPS Tracking');
                 });
+            },
+            init() {
+                // Khởi tạo Real-time Clock & IoT Loop
+                this.startRealTimeClock();
+                this.initIotCharts(); // Nếu tab IoT được mở
             }
         }
     );

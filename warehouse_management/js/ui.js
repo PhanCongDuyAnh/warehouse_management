@@ -209,13 +209,71 @@ function getUiMethods() {
             } catch { return iso; }
         },
 
-        // ── ZONE config accessor ──
-        getZoneCfg(zone) {
-            return ZONE_CONFIGS[zone] || ZONE_CONFIGS['B'];
+        // ── REAL-TIME LIVE UPDATE ENGINE ──
+        startRealTimeClock() {
+            // Cập nhật đồng hồ hệ thống mỗi giây
+            setInterval(() => {
+                this.currentTime = new Date();
+                
+                // Live IoT Jitter: Tạo độ rung cho các chỉ số cảm biến để cảm giác "Live"
+                // Ngay cả khi Simulation đang dừng, các cảm biến vẫn nhẩy số nhẹ
+                this.updateLiveIotHub();
+            }, 1000);
         },
-        getZoneLabel(zone) {
-            const cfg = ZONE_CONFIGS[zone];
-            return cfg ? cfg.label : 'Zone ' + zone;
+
+        updateLiveIotHub() {
+            if (!this.iotData || !this.iotData.zones) return;
+            
+            Object.keys(this.iotData.zones).forEach(z => {
+                const zone = this.iotData.zones[z];
+                // Thêm jitter cực nhỏ (±0.05°C, ±0.1% humi)
+                zone.temp = +(zone.temp + (Math.random() - 0.5) * 0.1).toFixed(1);
+                zone.humi = +(zone.humi + (Math.random() - 0.5) * 0.2).toFixed(1);
+                zone.vibration = +(zone.vibration + (Math.random() - 0.5) * 0.01).toFixed(3);
+                if (zone.vibration < 0) zone.vibration = 0;
+            });
+
+            // Nếu đang ở tab IoT thì cập nhật biểu đồ (nếu có logic update)
+            if (typeof this.updateIotRealtime === 'function') {
+                this.updateIotRealtime();
+            }
+        },
+
+        getWeatherLive() {
+            const h = this.currentTime.getHours();
+            const isNight = h >= 19 || h <= 5;
+            const scenario = this.simState.scenario;
+            
+            let baseTemp = 28; // Hanoi base
+            if (h >= 11 && h <= 15) baseTemp = 34;
+            else if (isNight) baseTemp = 24;
+
+            if (scenario === 'heatwave') baseTemp += 6;
+            if (scenario === 'storm') baseTemp -= 5;
+
+            const jitter = (this.currentTime.getSeconds() % 10) / 10; // Cảm giác biến thiên nhẹ
+            
+            const conditionMap = {
+                normal: isNight ? 'Trời quang (Đêm)' : 'Nắng nhẹ',
+                heatwave: 'Nắng gắt / Cảnh báo nhiệt',
+                storm: 'Mưa dông / Gió giật',
+                peak_season: 'Nhiều mây / Sương mù'
+            };
+
+            const iconMap = {
+                normal: isNight ? 'fa-moon' : 'fa-sun',
+                heatwave: 'fa-temperature-high',
+                storm: 'fa-cloud-showers-heavy',
+                peak_season: 'fa-cloud'
+            };
+
+            return {
+                temp: (baseTemp + jitter).toFixed(1),
+                condition: conditionMap[scenario] || 'Bình thường',
+                icon: iconMap[scenario] || 'fa-sun',
+                humidity: (60 + Math.random() * 10).toFixed(0),
+                wind: (5 + Math.random() * 5).toFixed(1)
+            };
         },
     };
 }
