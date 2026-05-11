@@ -107,8 +107,8 @@ function getAlertMethods() {
 
         // ── Helper to trigger an alert ──
         triggerAlert(type, message, level, icon = 'fas fa-bell') {
-            // Avoid duplicate spam (same message in last 3 ticks)
-            const recent = this.alerts.slice(0, 5).find(a => a.note === message);
+            // Avoid duplicate spam (same message in last 10 alerts)
+            const recent = this.alerts.slice(0, 10).find(a => a.note === message && a.type === type);
             if (recent) return;
 
             const newAlert = {
@@ -139,6 +139,96 @@ function getAlertMethods() {
         // Get only critical active alerts for dashboard
         activeCriticalAlerts() {
             return this.alerts.filter(a => a.level === 'Khẩn cấp').slice(0, 3);
+        },
+
+        // ── 4. Alert Handling & Resolution ──
+        handleAlert(alert) {
+            this.selectedAlert = { ...alert };
+            this.showHandlingModal = true;
+        },
+
+        async resolveAlert(alert, actionId) {
+            const index = this.alerts.findIndex(a => a.id === alert.id);
+            if (index === -1) return;
+
+            const action = this.getAvailableActions(alert).find(ac => ac.id === actionId);
+            if (!action) return;
+
+            // Logic based on actionId
+            let resolutionMsg = "";
+            let shouldRemove = action.resolve;
+
+            switch (actionId) {
+                case 'adjust_iot':
+                    resolutionMsg = `Đã gửi lệnh điều chỉnh hệ thống tại Zone ${alert.note.split('Zone ')[1]?.[0] || 'A'}.`;
+                    break;
+                case 'check_maintenance':
+                    resolutionMsg = `Đã điều động kỹ thuật kiểm tra khu vực cảnh báo.`;
+                    break;
+                case 'apply_discount':
+                    const prodName = alert.note.split(' đã')[0] || alert.note.split(' sẽ')[0];
+                    const prod = this.inventoryList.find(p => p.name === prodName);
+                    if (prod) {
+                        prod.currentSellPrice = Math.round(prod.baseSellPrice * 0.7);
+                        resolutionMsg = `Đã áp dụng giảm giá 30% cho ${prodName}.`;
+                    } else {
+                        resolutionMsg = `Đã áp dụng chương trình khuyến mãi.`;
+                    }
+                    break;
+                case 'restock':
+                    resolutionMsg = `Đã tạo yêu cầu nhập hàng bổ sung.`;
+                    this.currentTab = 'inventory';
+                    this.showAddProduct = true;
+                    break;
+                case 'contact_driver':
+                    resolutionMsg = `Đã liên hệ và hối thúc tài xế/đối tác vận chuyển.`;
+                    break;
+                case 'reroute':
+                    resolutionMsg = `Đã tính toán lại lộ trình tối ưu cho vận đơn.`;
+                    break;
+                case 'ignore':
+                    resolutionMsg = `Đã ghi nhận và tiếp tục theo dõi cảnh báo này.`;
+                    break;
+                case 'resolved':
+                    resolutionMsg = `Cảnh báo đã được xử lý hoàn tất.`;
+                    break;
+                default:
+                    resolutionMsg = `Đã thực hiện: ${action.label}`;
+            }
+
+            if (shouldRemove) {
+                this.alerts.splice(index, 1);
+                this.simPushEvent(`✅ <b>Resolved:</b> ${resolutionMsg}`);
+                this.toast(resolutionMsg, 'success', 'Đã xử lý xong');
+            } else {
+                this.toast(resolutionMsg, 'info', 'Đang theo dõi');
+            }
+
+            this.showHandlingModal = false;
+            this.persist();
+        },
+
+        getAvailableActions(alert) {
+            const type = alert.type;
+            const actions = [];
+
+            if (type === 'IoT Sensor') {
+                actions.push({ id: 'adjust_iot', label: 'Điều chỉnh hệ thống', icon: 'fas fa-sliders', resolve: true });
+                actions.push({ id: 'check_maintenance', label: 'Bảo trì thiết bị', icon: 'fas fa-tools', resolve: true });
+            } else if (type === 'Hạn sử dụng' || type === 'Chất lượng') {
+                actions.push({ id: 'apply_discount', label: 'Xả hàng (Giảm giá)', icon: 'fas fa-tags', resolve: true });
+                actions.push({ id: 'restock', label: 'Nhập hàng mới', icon: 'fas fa-cart-plus', resolve: true });
+            } else if (type === 'Logistics Delay') {
+                actions.push({ id: 'contact_driver', label: 'Liên hệ tài xế', icon: 'fas fa-phone', resolve: true });
+                actions.push({ id: 'reroute', label: 'Tối ưu lộ trình', icon: 'fas fa-route', resolve: true });
+            } else if (type === 'Tài chính') {
+                actions.push({ id: 'check_maintenance', label: 'Kiểm toán chi phí', icon: 'fas fa-file-invoice-dollar', resolve: true });
+            }
+
+            actions.push({ id: 'resolved', label: 'Đã xử lý xong', icon: 'fas fa-check-double', resolve: true });
+            actions.push({ id: 'ignore', label: 'Tiếp tục theo dõi', icon: 'fas fa-eye', resolve: false });
+
+            return actions;
         }
     };
 }

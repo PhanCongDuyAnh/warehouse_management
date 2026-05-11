@@ -41,6 +41,8 @@ function warehouseApp() {
         showShipDetail: false,
         selectedShipItem: null,
         focusedVehicleId: null,
+        showHandlingModal: false,
+        selectedAlert: null,
 
         // Chatbot
         userInput: '', isTyping: false, showSuggestions: true,
@@ -75,8 +77,12 @@ function warehouseApp() {
             dailyLogistics: 4200000,
             qualityDecayPerDay: 0.15,
             profitMargin: 0.22,
-            weatherFactor: 1.0, // 1.0 = normal, > 1.0 = bad
-            trafficFactor: 1.0, // 1.0 = normal, > 1.0 = busy
+            totalFuelConsumed: 0,
+            fuelCost: 0,
+            iotAlertCount: 0,
+            scenario: 'normal',
+            weatherFactor: 1.0,
+            trafficFactor: 1.0,
             activeStorm: false,
             activeTraffic: false,
         },
@@ -126,7 +132,7 @@ function warehouseApp() {
             trackId: '', orderId: '', type: 'Thường', originHub: 'Long Biên', 
             vehicleType: 'Xe Van', destination: '', status: 'Khởi tạo', 
             exportStaff: '', exportRole: 'Nhân viên xuất kho', shipStaff: '', 
-            driverName: '', estimatedArrival: '' 
+            driverName: '', estimatedArrival: '', itemClass: 'Hàng thường' 
         },
         newAlrt: { name: '', type: 'Sắp hết hàng', level: 'Trung bình', qty: 0, alertDate: new Date().toISOString().split('T')[0], handling: 'Đặt hàng bổ sung', note: '' },
         handlingOptions: [
@@ -155,9 +161,6 @@ function warehouseApp() {
                         this.initLogisticsMap();
                         // Special fix for Leaflet size in hidden containers
                         setTimeout(() => this.initLogisticsMap(), 300);
-                    }
-                    if (val === 'reports') {
-                        this.$nextTick(() => this.initFinanceCharts());
                     }
                 }); 
             });

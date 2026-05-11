@@ -6,6 +6,7 @@
 let map = null;
 let markers = {};
 let hubMarkers = {};
+let hubConnections = []; // Static lines between hubs
 let polylineRoutes = {};
 
 function getLogisticsMethods() {
@@ -37,6 +38,9 @@ function getLogisticsMethods() {
                     .addTo(map)
                     .bindPopup(`<b>${hub.name}</b><br>Trạng thái: Hoạt động`);
             });
+
+            // Draw Hub Connections (The logical network)
+            this.drawHubNetwork();
 
             // Start periodic update
             setInterval(() => {
@@ -114,6 +118,37 @@ function getLogisticsMethods() {
                 if (markers[s.trackId]) markers[s.trackId].openPopup();
                 this.updateMapMarkers();
             }
+        },
+
+        drawHubNetwork() {
+            if (!map) return;
+            
+            // Define the connections (logical paths between hubs)
+            const connections = [
+                ['Long Biên', 'Hoài Đức'],
+                ['Long Biên', 'Ngọc Hồi'],
+                ['Long Biên', 'Hà Đông'],
+                ['Hà Đông', 'Hoài Đức'],
+                ['Hà Đông', 'Ngọc Hồi']
+            ];
+
+            // Clear old lines if any
+            hubConnections.forEach(line => map.removeLayer(line));
+            hubConnections = [];
+
+            connections.forEach(([from, to]) => {
+                const c1 = HUB_DATA[from]?.coords;
+                const c2 = HUB_DATA[to]?.coords;
+                if (c1 && c2) {
+                    const line = L.polyline([c1, c2], {
+                        color: '#94a3b8', // Slate 400
+                        weight: 1,
+                        opacity: 0.3,
+                        dashArray: '1, 10'
+                    }).addTo(map);
+                    hubConnections.push(line);
+                }
+            });
         }
     };
 }

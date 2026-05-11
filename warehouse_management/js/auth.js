@@ -37,6 +37,13 @@ function getAuthMethods() {
             this.currentTab = 'home';
             this.loginForm = { username: '', password: '' };
             this.loginError = '';
+            this.toast('Đã đăng xuất thành công!', 'info', 'Hẹn gặp lại');
+        },
+
+        confirmLogout() {
+            if (confirm('Bạn có chắc chắn muốn đăng xuất khỏi hệ thống không?')) {
+                this.doLogout();
+            }
         },
 
         // ── PERMISSION CHECK ──

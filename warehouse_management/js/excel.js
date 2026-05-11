@@ -46,9 +46,8 @@ function getExcelMethods() {
                     'Điểm đến': s.destination,
                     'Phương tiện': s.vehicleType,
                     'Tài xế': s.driverName,
+                    'Phân loại': s.itemClass || 'Hàng thường',
                     'Trạng thái': s.shippingStatus,
-                    'Quãng đường (km)': s.distance || 0,
-                    'Nhiên liệu (L)': s.fuelConsumed || 0,
                     'ETA': s.estimatedArrival?.replace('T', ' ') || 'N/A'
                 }));
                 const wsLog = XLSX.utils.json_to_sheet(logData);
@@ -90,13 +89,12 @@ function getExcelMethods() {
                     'Hub xuất phát': s.originHub || 'Kho tổng HN',
                     'Loại phương tiện': s.vehicleType,
                     'Địa chỉ giao': s.destination,
-                    'Phân loại': s.type,
+                    'Hình thức': s.type,
+                    'Phân loại mặt hàng': s.itemClass || 'Hàng thường',
                     'Người phụ trách xuất kho': s.exportStaff || 'N/A',
                     'Vai trò xuất kho': s.exportRole || 'N/A',
                     'Người phụ trách vận chuyển': s.driverName || s.shipStaff || 'N/A',
-                    'Trạng thái hiện tại': s.shippingStatus,
-                    'Quãng đường (km)': s.distance || 0,
-                    'Nhiên liệu (L)': s.fuelConsumed || 0
+                    'Trạng thái hiện tại': s.shippingStatus
                 }));
 
                 const ws = XLSX.utils.json_to_sheet(data);

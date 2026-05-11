@@ -306,10 +306,22 @@ function getCrudMethods() {
             const etaHours = shipType === 'Hỏa tốc' ? 2 : (shipType === 'Giao nhanh' ? 12 : 24);
             const eta = new Date(this.simVirtualTime.getTime() + etaHours * 3600000);
             
+            // Tự động phân loại hàng hóa
+            let itemClass = 'Hàng thường';
+            const order = this.orders.find(o => o.id === orderId);
+            if (order) {
+                const prod = this.inventoryList.find(p => p.id === order.sku);
+                if (prod) {
+                    if (prod.storageZone === 'Frozen' || prod.warehouseZone === 'A') itemClass = 'Hàng đông lạnh';
+                    else if (prod.name.toLowerCase().includes('vỡ') || prod.name.toLowerCase().includes('kính')) itemClass = 'Hàng dễ vỡ';
+                }
+            }
+
             const newShipment = {
                 trackId: trackId,
                 orderId: orderId,
                 type: shipType,
+                itemClass: itemClass,
                 originHub: hub,
                 destination: 'Khu vực ' + ['Bình Thạnh', 'Quận 1', 'Quận 7', 'Thủ Đức'][Math.floor(Math.random() * 4)],
                 vehicleType: vehicleType,
@@ -338,7 +350,7 @@ function getCrudMethods() {
                 trackId: '', orderId: '', location: 'Kho tổng', type: 'Thường', status: 'Khởi tạo',
                 exportStaff: '', exportRole: 'Nhân viên xuất kho', shipStaff: '',
                 originHub: 'Kho tổng HN', destination: '', vehicleType: 'Xe tải 1.5T',
-                driverName: '', estimatedArrival: ''
+                driverName: '', estimatedArrival: '', itemClass: 'Hàng thường'
             };
         },
 
@@ -382,7 +394,7 @@ function getCrudMethods() {
             else if (list === 'inboundList') this.inboundList = this.inboundList.filter(i => i.id !== id);
             else if (list === 'outboundList') this.outboundList = this.outboundList.filter(o => o.id !== id);
             else if (list === 'shippingList') this.shippingList = this.shippingList.filter(s => s.trackId !== id);
-            else if (list === 'alerts') this.alerts = this.alerts.filter(a => a.name !== id);
+            else if (list === 'alerts') this.alerts = this.alerts.filter(a => a.id !== id);
             else if (list === 'employeeList') this.employeeList = this.employeeList.filter(e => e.id !== id);
             this.persist();
             this.showDeleteConfirm = false;
